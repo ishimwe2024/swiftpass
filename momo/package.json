@@ -1,0 +1,19 @@
+{
+  "name": "momoapi",
+  "version": "1.0.0",
+  "main": "index.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.19.0",
+    "body-parser": "^1.20.6",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "node-fetch": "^2.6.1",
+    "twilio": "^3.55.0",
+    "uuid": "^10.0.0"
+  }
+}

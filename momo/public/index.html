@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Donation Form</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+    <h2>Pay Now</h2>
+    <form action="/process_payment" method="post">
+        <label for="phone">Phone Number:</label>
+        <input type="tel" id="phone" name="phoneNumber" placeholder="Enter your phone number" required>
+        
+        <label for="amount">Amount (&euro;):</label>
+        <input type="number" id="amount" name="amount" placeholder="Enter donation amount" min="1" required>
+        
+        <input type="submit" name="pay" value="Pay">
+    </form>
+</div>
+
+</body>
+</html>
