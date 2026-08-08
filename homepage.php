@@ -1,6 +1,7 @@
 <?php
 session_start();
 include('connection.php'); // Make sure $conn is your mysqli connection
+date_default_timezone_set('Africa/Kigali');
 
 // Redirect if not logged in
 if (!isset($_SESSION['user_id'])) {
@@ -10,6 +11,24 @@ if (!isset($_SESSION['user_id'])) {
 
 // Get user ID from session
 $userId = $_SESSION['user_id'];
+
+function updateTripStatusAutomatically($conn) {
+    $current_time = date('Y-m-d H:i:s');
+
+    $update_to_ontrip = "UPDATE trips
+                         SET status = 'ontrip'
+                         WHERE departure_datetime <= '$current_time'
+                         AND status = 'available'";
+    $conn->query($update_to_ontrip);
+
+    $update_to_arrived = "UPDATE trips
+                          SET status = 'arrived'
+                          WHERE estimated_arrival <= '$current_time'
+                          AND status = 'ontrip'";
+    $conn->query($update_to_arrived);
+}
+
+updateTripStatusAutomatically($conn);
 
 // Default username
 $username = '';
@@ -31,6 +50,7 @@ if ($userId) {
 // Handle search and filtering
 $route_search = $_POST['route_search'] ?? '';
 $travel_date = $_POST['travel_date'] ?? '';
+$current_datetime = date('Y-m-d H:i:s');
 
 // Fetch trips with available seats using concatenated route search
 if (!empty($route_search)) {
@@ -61,20 +81,19 @@ if (!empty($route_search)) {
         WHERE (r.departure LIKE ? OR r.destination LIKE ? OR CONCAT(r.departure, ' → ', r.destination) LIKE ?)
         AND DATE(t.departure_datetime) = ?
         AND t.available_seats > 0
-        AND t.status IN ('available', 'ontrip')
-        AND b.status = 'active'
+        AND t.status = 'available'
+        AND t.departure_datetime > ?
         ORDER BY t.departure_datetime ASC
     ");
     $search_term = "%" . $route_search . "%";
     $departure_term = "%" . $departure_search . "%";
     $destination_term = "%" . $destination_search . "%";
-    $stmt->bind_param("ssss", $departure_term, $destination_term, $search_term, $travel_date);
+    $stmt->bind_param("sssss", $departure_term, $destination_term, $search_term, $travel_date, $current_datetime);
     $stmt->execute();
     $result = $stmt->get_result();
     $search_performed = true;
 } else {
-    // Show available trips for today if no search
-    $today = date('Y-m-d');
+    // Show all upcoming available trips if no search
     $result = $conn->query("
         SELECT 
             t.trip_id,
@@ -94,10 +113,9 @@ if (!empty($route_search)) {
         JOIN buses b ON t.bus_id = b.bus_id
         JOIN routes r ON t.route_id = r.route_id
         JOIN drivers d ON t.driver_id = d.driver_id
-        WHERE DATE(t.departure_datetime) >= '$today'
-        AND t.available_seats > 0
-        AND t.status IN ('available', 'ontrip')
-        AND b.status = 'active'
+        WHERE t.available_seats > 0
+        AND t.status = 'available'
+        AND t.departure_datetime > '$current_datetime'
         ORDER BY t.departure_datetime ASC
         LIMIT 12
     ");
@@ -543,7 +561,7 @@ $total_buses = $result ? $result->num_rows : 0;
         <span>Dashboard</span>
       </a>
       <!-- Removed Booking link from sidebar -->
-      <a href="setting.php" class="nav-link">
+      <a href="settings.php" class="nav-link">
         <i class="fas fa-cogs"></i>
         <span>Settings</span>
       </a>
@@ -655,13 +673,14 @@ $total_buses = $result ? $result->num_rows : 0;
                 $departure_date = date('M j, Y', strtotime($row['departure_datetime']));
                 $departure_time = date('H:i', strtotime($row['departure_datetime']));
                 $arrival_time = date('H:i', strtotime($row['estimated_arrival']));
+                $departure_timestamp = strtotime($row['departure_datetime']);
                 
                 // Determine status badge
                 $status_badge = $row['available_seats'] > 0 ? 'badge-available' : 'available';
                 $status_text = $row['available_seats'] > 0 ? $row['available_seats'] . ' Seats Left' : 'available';
                 
                 echo '
-                <div class="col-xl-4 col-lg-6 col-md-6">
+                <div class="col-xl-4 col-lg-6 col-md-6 trip-card-wrapper" data-departure-timestamp="'.$departure_timestamp.'">
                   <div class="bus-card bus-info">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                       <h6 class="fw-bold text-primary mb-0">'.htmlspecialchars($row['model']).'</h6>
@@ -865,6 +884,26 @@ $total_buses = $result ? $result->num_rows : 0;
                 card.style.transform = 'translateY(0)';
             }, index * 100);
         });
+
+        function removeExpiredTrips() {
+            const now = Math.floor(Date.now() / 1000);
+            const tripWrappers = document.querySelectorAll('.trip-card-wrapper');
+
+            tripWrappers.forEach((wrapper) => {
+                const departureValue = Number(wrapper.dataset.departureTimestamp);
+                if (!departureValue) {
+                    return;
+                }
+
+                if (!Number.isNaN(departureValue) && departureValue <= now) {
+                    wrapper.remove();
+                }
+            });
+        }
+
+        removeExpiredTrips();
+        setInterval(removeExpiredTrips, 1000);
+
     });
   </script>
 </body>

@@ -4,32 +4,33 @@ include('connection.php');
 
 // Redirect if not logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit;
+  header("Location: index.php");
+  exit;
 }
 
 // Get user ID from session
 $userId = $_SESSION['user_id'];
 
 // Auto-update trip status based on time and conditions
-function updateTripStatusAutomatically($conn) {
-    $current_time = date('Y-m-d H:i:s');
-    
-    // Update trips from 'available' to 'ontrip' when departure time is reached
-    $update_to_ontrip = "UPDATE trips 
+function updateTripStatusAutomatically($conn)
+{
+  $current_time = date('Y-m-d H:i:s');
+
+  // Update trips from 'available' to 'ontrip' when departure time is reached
+  $update_to_ontrip = "UPDATE trips 
                           SET status = 'ontrip' 
                           WHERE departure_datetime <= '$current_time' 
                           AND status = 'available'";
-    $conn->query($update_to_ontrip);
-    
-    // Update trips from 'ontrip' to 'arrived' when estimated arrival time is reached
-    $update_to_arrived = "UPDATE trips 
+  $conn->query($update_to_ontrip);
+
+  // Update trips from 'ontrip' to 'arrived' when estimated arrival time is reached
+  $update_to_arrived = "UPDATE trips 
                          SET status = 'arrived' 
                          WHERE estimated_arrival <= '$current_time' 
                          AND status = 'ontrip'";
-    $conn->query($update_to_arrived);
-    
-    return true;
+  $conn->query($update_to_arrived);
+
+  return true;
 }
 
 // Run the auto-update
@@ -37,24 +38,25 @@ updateTripStatusAutomatically($conn);
 
 // ===== UPDATED BUS STATUS MANAGEMENT =====
 // Function to automatically update bus status based on trips
-function updateAutomaticBusStatus($conn) {
-    // Update buses that are on active trips to 'inactive'
-    $update_on_trip = "UPDATE buses b 
+function updateAutomaticBusStatus($conn)
+{
+  // Update buses that are on active trips to 'inactive'
+  $update_on_trip = "UPDATE buses b 
                       JOIN trips t ON b.bus_id = t.bus_id 
                       SET b.status = 'inactive' 
-                      WHERE t.status IN ('scheduled', 'boarding', 'departed') 
+                      WHERE t.status IN ('available', 'ontrip') 
                       AND b.status != 'maintenance'";
-    $conn->query($update_on_trip);
-    
-    // Update buses with no active trips to 'active'
-    $update_available = "UPDATE buses b 
-                        LEFT JOIN trips t ON b.bus_id = t.bus_id AND t.status IN ('scheduled', 'boarding', 'departed')
+  $conn->query($update_on_trip);
+
+  // Update buses with no active trips to 'active'
+  $update_available = "UPDATE buses b 
+                        LEFT JOIN trips t ON b.bus_id = t.bus_id AND t.status IN ('available', 'ontrip')
                         SET b.status = 'active' 
                         WHERE t.trip_id IS NULL 
                         AND b.status NOT IN ('maintenance', 'inactive')";
-    $conn->query($update_available);
-    
-    return true;
+  $conn->query($update_available);
+
+  return true;
 }
 
 // Run automatic status updates on page load
@@ -62,95 +64,95 @@ updateAutomaticBusStatus($conn);
 
 // Handle bus assignment for new trip
 if (isset($_GET['assign_bus'])) {
-    $bus_id = $conn->real_escape_string($_GET['assign_bus']);
-    
-    // Fetch bus details
-    $bus_sql = "SELECT * FROM buses WHERE bus_id = '$bus_id'";
-    $bus_result = $conn->query($bus_sql);
-    
-    if ($bus_result->num_rows > 0) {
-        $bus_data = $bus_result->fetch_assoc();
-        
-        // Check if bus is already assigned to an active trip
-        $check_trip_sql = "SELECT * FROM trips WHERE bus_id = '$bus_id' AND status IN ('scheduled', 'boarding', 'departed')";
-        $trip_result = $conn->query($check_trip_sql);
-        
-        if ($trip_result->num_rows > 0) {
-            $error_message = "Bus {$bus_data['plates_number']} is already assigned to an active trip!";
-        } else {
-            // Update bus status to 'inactive' when assigned
-            $update_sql = "UPDATE buses SET status = 'inactive' WHERE bus_id = '$bus_id'";
-            
-            if ($conn->query($update_sql) === TRUE) {
-                $success_message = "Bus {$bus_data['plates_number']} assigned successfully! Status changed to inactive to prevent duplicate assignments.";
-            } else {
-                $error_message = "Error assigning bus: " . $conn->error;
-            }
-        }
+  $bus_id = $conn->real_escape_string($_GET['assign_bus']);
+
+  // Fetch bus details
+  $bus_sql = "SELECT * FROM buses WHERE bus_id = '$bus_id'";
+  $bus_result = $conn->query($bus_sql);
+
+  if ($bus_result->num_rows > 0) {
+    $bus_data = $bus_result->fetch_assoc();
+
+    // Check if bus is already assigned to an active trip
+    $check_trip_sql = "SELECT * FROM trips WHERE bus_id = '$bus_id' AND status IN ('available', 'ontrip')";
+    $trip_result = $conn->query($check_trip_sql);
+
+    if ($trip_result->num_rows > 0) {
+      $error_message = "Bus {$bus_data['plates_number']} is already assigned to an active trip!";
     } else {
-        $error_message = "Bus not found!";
+      // Update bus status to 'inactive' when assigned
+      $update_sql = "UPDATE buses SET status = 'inactive' WHERE bus_id = '$bus_id'";
+
+      if ($conn->query($update_sql) === TRUE) {
+        $success_message = "Bus {$bus_data['plates_number']} assigned successfully! Status changed to inactive to prevent duplicate assignments.";
+      } else {
+        $error_message = "Error assigning bus: " . $conn->error;
+      }
     }
+  } else {
+    $error_message = "Bus not found!";
+  }
 }
 
 // Handle bus release (make available again)
 if (isset($_GET['release_bus'])) {
-    $bus_id = $conn->real_escape_string($_GET['release_bus']);
-    
-    // Check if bus has any active trips
-    $check_trip_sql = "SELECT * FROM trips WHERE bus_id = '$bus_id' AND status IN ('scheduled', 'boarding', 'departed')";
-    $trip_result = $conn->query($check_trip_sql);
-    
-    if ($trip_result->num_rows > 0) {
-        $error_message = "Cannot release bus! It is currently assigned to active trips.";
+  $bus_id = $conn->real_escape_string($_GET['release_bus']);
+
+  // Check if bus has any active trips
+  $check_trip_sql = "SELECT * FROM trips WHERE bus_id = '$bus_id' AND status IN ('available', 'ontrip')";
+  $trip_result = $conn->query($check_trip_sql);
+
+  if ($trip_result->num_rows > 0) {
+    $error_message = "Cannot release bus! It is currently assigned to active trips.";
+  } else {
+    $update_sql = "UPDATE buses SET status = 'active' WHERE bus_id = '$bus_id'";
+
+    if ($conn->query($update_sql) === TRUE) {
+      $success_message = "Bus released and now available for new trips!";
     } else {
-        $update_sql = "UPDATE buses SET status = 'active' WHERE bus_id = '$bus_id'";
-        
-        if ($conn->query($update_sql) === TRUE) {
-            $success_message = "Bus released and now available for new trips!";
-        } else {
-            $error_message = "Error releasing bus: " . $conn->error;
-        }
+      $error_message = "Error releasing bus: " . $conn->error;
     }
+  }
 }
 
 // Handle quick status update with validation
 if (isset($_GET['update_status'])) {
-    $bus_id = $conn->real_escape_string($_GET['update_status']);
-    $new_status = $conn->real_escape_string($_GET['status']);
-    
-    // Check if bus has active trips when trying to set to active
-    if ($new_status == 'active') {
-        $check_trip_sql = "SELECT * FROM trips WHERE bus_id = '$bus_id' AND status IN ('scheduled', 'boarding', 'departed')";
-        $trip_result = $conn->query($check_trip_sql);
-        
-        if ($trip_result->num_rows > 0) {
-            $error_message = "Cannot set bus to active! It is currently assigned to active trips.";
-        } else {
-            $update_sql = "UPDATE buses SET status = '$new_status' WHERE bus_id = '$bus_id'";
-            if ($conn->query($update_sql) === TRUE) {
-                $success_message = "Bus status updated to {$new_status}!";
-            } else {
-                $error_message = "Error updating bus status: " . $conn->error;
-            }
-        }
+  $bus_id = $conn->real_escape_string($_GET['update_status']);
+  $new_status = $conn->real_escape_string($_GET['status']);
+
+  // Check if bus has active trips when trying to set to active
+  if ($new_status == 'active') {
+    $check_trip_sql = "SELECT * FROM trips WHERE bus_id = '$bus_id' AND status IN ('available', 'ontrip')";
+    $trip_result = $conn->query($check_trip_sql);
+
+    if ($trip_result->num_rows > 0) {
+      $error_message = "Cannot set bus to active! It is currently assigned to active trips.";
     } else {
-        // For other statuses (maintenance, inactive), allow directly
-        $update_sql = "UPDATE buses SET status = '$new_status' WHERE bus_id = '$bus_id'";
-        if ($conn->query($update_sql) === TRUE) {
-            $success_message = "Bus status updated to {$new_status}!";
-        } else {
-            $error_message = "Error updating bus status: " . $conn->error;
-        }
+      $update_sql = "UPDATE buses SET status = '$new_status' WHERE bus_id = '$bus_id'";
+      if ($conn->query($update_sql) === TRUE) {
+        $success_message = "Bus status updated to {$new_status}!";
+      } else {
+        $error_message = "Error updating bus status: " . $conn->error;
+      }
     }
+  } else {
+    // For other statuses (maintenance, inactive), allow directly
+    $update_sql = "UPDATE buses SET status = '$new_status' WHERE bus_id = '$bus_id'";
+    if ($conn->query($update_sql) === TRUE) {
+      $success_message = "Bus status updated to {$new_status}!";
+    } else {
+      $error_message = "Error updating bus status: " . $conn->error;
+    }
+  }
 }
 
 // Handle auto-refresh status
 if (isset($_GET['refresh_status'])) {
-    if (updateAutomaticBusStatus($conn)) {
-        $success_message = "Bus statuses automatically updated based on current trips!";
-    } else {
-        $error_message = "Error updating bus statuses automatically!";
-    }
+  if (updateAutomaticBusStatus($conn)) {
+    $success_message = "Bus statuses automatically updated based on current trips!";
+  } else {
+    $error_message = "Error updating bus statuses automatically!";
+  }
 }
 
 // Handle bus filtering and search
@@ -161,18 +163,18 @@ $search_term = isset($_GET['search']) ? $_GET['search'] : '';
 $buses_query = "SELECT b.*, 
                        COUNT(t.trip_id) as active_trips
                 FROM buses b 
-                LEFT JOIN trips t ON b.bus_id = t.bus_id AND t.status IN ('scheduled', 'boarding', 'departed')
+                LEFT JOIN trips t ON b.bus_id = t.bus_id AND t.status IN ('available', 'ontrip')
                 WHERE 1=1";
 
 // Apply status filter
 if (!empty($status_filter)) {
-    $status_filter = $conn->real_escape_string($status_filter);
-    $buses_query .= " AND b.status = '$status_filter'";
+  $status_filter = $conn->real_escape_string($status_filter);
+  $buses_query .= " AND b.status = '$status_filter'";
 }
 
 // Apply search filter
 if (!empty($search_term)) {
-    $buses_query .= " AND (b.plates_number LIKE '%$search_term%' 
+  $buses_query .= " AND (b.plates_number LIKE '%$search_term%' 
                           OR b.model LIKE '%$search_term%')";
 }
 
@@ -197,7 +199,7 @@ $maintenance_buses = $conn->query("SELECT COUNT(*) as total FROM buses WHERE sta
 $on_trip_buses = $conn->query("SELECT COUNT(DISTINCT b.bus_id) as total 
                               FROM buses b 
                               JOIN trips t ON b.bus_id = t.bus_id 
-                              WHERE t.status IN ('scheduled', 'boarding', 'departed')")->fetch_assoc()['total'];
+                              WHERE t.status IN ('available', 'ontrip')")->fetch_assoc()['total'];
 // ===== END UPDATED BUS STATUS MANAGEMENT =====
 
 // ... rest of your existing code for other statistics ...
@@ -223,6 +225,26 @@ $today_revenue = $today_data['revenue'] ? $today_data['revenue'] : 0;
 // Handle booking filtering and search
 $booking_date_filter = isset($_GET['booking_date_filter']) ? $_GET['booking_date_filter'] : '';
 
+// Handle user filter
+$user_role_filter = isset($_GET['user_role_filter']) ? $_GET['user_role_filter'] : '';
+
+// Handle user delete action
+if (isset($_GET['delete_user']) && !empty($_GET['delete_user'])) {
+  $delete_user_id = (int) $_GET['delete_user'];
+  if ($delete_user_id !== (int)$userId) {
+    $delete_user_query = $conn->prepare("DELETE FROM users WHERE id = ?");
+    $delete_user_query->bind_param("i", $delete_user_id);
+    if ($delete_user_query->execute()) {
+      $success_message = "User deleted successfully.";
+    } else {
+      $error_message = "Unable to delete user.";
+    }
+    $delete_user_query->close();
+  } else {
+    $error_message = "You cannot delete your own account.";
+  }
+}
+
 // Fetch data for other sections using new schema
 $all_routes = $conn->query("SELECT * FROM routes ORDER BY created_at DESC");
 $all_trips = $conn->query("
@@ -247,14 +269,39 @@ $bookings_query = "
     WHERE 1=1";
 
 if (!empty($booking_date_filter)) {
-    $booking_date_filter = $conn->real_escape_string($booking_date_filter);
-    $bookings_query .= " AND DATE(b.booking_date) = '$booking_date_filter'";
+  $booking_date_filter = $conn->real_escape_string($booking_date_filter);
+  $bookings_query .= " AND DATE(b.booking_date) = '$booking_date_filter'";
 }
 
 $bookings_query .= " ORDER BY b.booking_date DESC LIMIT 50";
 $all_bookings = $conn->query($bookings_query);
 $all_drivers = $conn->query("SELECT * FROM drivers ORDER BY created_at DESC");
 $all_customers = $conn->query("SELECT * FROM customers ORDER BY created_at DESC LIMIT 50");
+
+$users_query = "SELECT * FROM users WHERE 1=1";
+if (!empty($user_role_filter)) {
+  $user_role_filter = $conn->real_escape_string($user_role_filter);
+  if ($user_role_filter === 'passenger') {
+    $users_query .= " AND (role = 'passenger' OR role IS NULL OR role = '')";
+  } else {
+    $users_query .= " AND role = '$user_role_filter'";
+  }
+}
+$users_query .= " ORDER BY created_at DESC";
+$all_users = $conn->query($users_query);
+
+if ($all_users) {
+  $all_users_data = [];
+  while ($user_row = $all_users->fetch_assoc()) {
+    $user_row['role'] = !empty($user_row['role']) ? $user_row['role'] : 'passenger';
+    if (empty($user_row['name'])) {
+      $user_row['name'] = trim(($user_row['firstname'] ?? '') . ' ' . ($user_row['lastname'] ?? '')) ?: $user_row['email'];
+    }
+    $all_users_data[] = $user_row;
+  }
+  $all_users = $all_users_data;
+}
+
 $recent_bookings_query = "
     SELECT b.*, c.firstname, c.lastname, c.contact, c.email,
            t.departure_datetime, bus.plates_number,
@@ -267,26 +314,11 @@ $recent_bookings_query = "
     WHERE 1=1";
 
 if (!empty($booking_date_filter)) {
-    $recent_bookings_query .= " AND DATE(b.booking_date) = '$booking_date_filter'";
+  $recent_bookings_query .= " AND DATE(b.booking_date) = '$booking_date_filter'";
 }
 
 $recent_bookings_query .= " ORDER BY b.booking_date DESC LIMIT 8";
 $recent_bookings = $conn->query($recent_bookings_query);
-
-$recent_payments_query = "
-    SELECT p.payment_id, p.booking_id, p.amount, p.payment_method, p.transaction_id, p.payment_status, p.time_paid,
-           c.firstname, c.lastname, c.contact,
-           r.departure, r.destination
-    FROM payments p
-    LEFT JOIN bookings b ON p.booking_id = b.booking_id
-    LEFT JOIN customers c ON b.customer_id = c.customer_id
-    LEFT JOIN trips t ON b.trip_id = t.trip_id
-    LEFT JOIN routes r ON t.route_id = r.route_id
-    ORDER BY p.time_paid DESC
-    LIMIT 8
-";
-$recent_payments = $conn->query($recent_payments_query);
-
 // Handle route filtering and search
 $route_status_filter = isset($_GET['route_status_filter']) ? $_GET['route_status_filter'] : '';
 $route_search_term = isset($_GET['route_search']) ? $_GET['route_search'] : '';
@@ -296,14 +328,14 @@ $routes_query = "SELECT * FROM routes WHERE 1=1";
 
 // Apply status filter
 if (!empty($route_status_filter)) {
-    $route_status_filter = $conn->real_escape_string($route_status_filter);
-    $routes_query .= " AND status = '$route_status_filter'";
+  $route_status_filter = $conn->real_escape_string($route_status_filter);
+  $routes_query .= " AND status = '$route_status_filter'";
 }
 
 // Apply search filter
 if (!empty($route_search_term)) {
-    $route_search_term = $conn->real_escape_string($route_search_term);
-    $routes_query .= " AND (departure LIKE '%$route_search_term%' 
+  $route_search_term = $conn->real_escape_string($route_search_term);
+  $routes_query .= " AND (departure LIKE '%$route_search_term%' 
                           OR destination LIKE '%$route_search_term%'
                           OR price_per_seat LIKE '%$route_search_term%')";
 }
@@ -332,14 +364,14 @@ $trips_query = "SELECT t.*, b.plates_number, d.name as driver_name,
 
 // Apply status filter
 if (!empty($trip_status_filter)) {
-    $trip_status_filter = $conn->real_escape_string($trip_status_filter);
-    $trips_query .= " AND t.status = '$trip_status_filter'";
+  $trip_status_filter = $conn->real_escape_string($trip_status_filter);
+  $trips_query .= " AND t.status = '$trip_status_filter'";
 }
 
 // Apply search filter
 if (!empty($trip_search_term)) {
-    $trip_search_term = $conn->real_escape_string($trip_search_term);
-    $trips_query .= " AND (b.plates_number LIKE '%$trip_search_term%' 
+  $trip_search_term = $conn->real_escape_string($trip_search_term);
+  $trips_query .= " AND (b.plates_number LIKE '%$trip_search_term%' 
                           OR d.name LIKE '%$trip_search_term%'
                           OR r.departure LIKE '%$trip_search_term%'
                           OR r.destination LIKE '%$trip_search_term%')";
@@ -384,7 +416,7 @@ LEFT JOIN bookings bk ON t.trip_id = bk.trip_id
 WHERE DATE(t.departure_datetime) BETWEEN '$start_date' AND '$end_date'";
 
 if (!empty($route_filter)) {
-    $report_query .= " AND t.route_id = '$route_filter'";
+  $report_query .= " AND t.route_id = '$route_filter'";
 }
 
 $report_query .= " GROUP BY t.trip_id
@@ -404,7 +436,7 @@ LEFT JOIN routes r ON t.route_id = r.route_id
 WHERE DATE(t.departure_datetime) BETWEEN '$start_date' AND '$end_date'";
 
 if (!empty($route_filter)) {
-    $summary_query .= " AND t.route_id = '$route_filter'";
+  $summary_query .= " AND t.route_id = '$route_filter'";
 }
 
 $summary_result = $conn->query($summary_query);
@@ -434,12 +466,13 @@ $performance_stats = $conn->query("
     WHERE DATE(departure_datetime) BETWEEN '$start_date' AND '$end_date'
 ")->fetch_assoc();
 
-$completion_rate = $performance_stats['total_trips'] > 0 ? 
-    round(($performance_stats['completed_trips'] / $performance_stats['total_trips']) * 100, 1) : 0;
+$completion_rate = $performance_stats['total_trips'] > 0 ?
+  round(($performance_stats['completed_trips'] / $performance_stats['total_trips']) * 100, 1) : 0;
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -459,7 +492,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       --light: #ecf0f1;
       --sidebar-width: 280px;
     }
-    
+
     body {
       background: linear-gradient(135deg, #191e32ff 0%, #1a151fff 100%);
       min-height: 100vh;
@@ -467,7 +500,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       color: #fff;
       overflow-x: hidden;
     }
-    
+
     /* Sidebar Styling */
     .sidebar {
       width: var(--sidebar-width);
@@ -480,14 +513,14 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       z-index: 1000;
       border-right: 1px solid rgba(255, 255, 255, 0.2);
     }
-    
+
     .sidebar-brand {
       padding: 2rem 1.5rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       background: linear-gradient(135deg, var(--primary), var(--secondary));
       margin: -1px -1px 0 -1px;
     }
-    
+
     .sidebar-brand h4 {
       margin: 0;
       font-weight: 700;
@@ -495,17 +528,17 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       align-items: center;
       color: white;
     }
-    
+
     .sidebar-brand i {
       margin-right: 12px;
       font-size: 1.8rem;
       color: var(--success);
     }
-    
+
     .nav-container {
       padding: 1rem 0;
     }
-    
+
     .sidebar .nav-link {
       color: var(--primary);
       padding: 1rem 1.5rem;
@@ -518,27 +551,27 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       font-weight: 500;
       border: none;
     }
-    
+
     .sidebar .nav-link:hover {
       background: linear-gradient(135deg, var(--secondary), var(--primary));
       color: white;
       transform: translateX(5px);
       box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
     }
-    
+
     .sidebar .nav-link.active {
       background: linear-gradient(135deg, var(--secondary), var(--primary));
       color: white;
       box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
     }
-    
+
     .sidebar .nav-link i {
       margin-right: 12px;
       width: 20px;
       text-align: center;
       font-size: 1.1rem;
     }
-    
+
     /* Main Content */
     .main-content {
       margin-left: var(--sidebar-width);
@@ -546,7 +579,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       transition: all 0.3s;
       min-height: 100vh;
     }
-    
+
     /* Header */
     .header {
       background: rgba(255, 255, 255, 0.95);
@@ -559,26 +592,26 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       align-items: center;
       backdrop-filter: blur(10px);
     }
-    
+
     .header h2 {
       margin: 0;
       color: var(--primary);
       font-weight: 700;
       font-size: 1.8rem;
     }
-    
+
     .header p {
       margin: 0.5rem 0 0 0;
       color: #6c757d;
       font-size: 1rem;
     }
-    
+
     .user-info {
       display: flex;
       align-items: center;
       gap: 1rem;
     }
-    
+
     .user-avatar {
       width: 50px;
       height: 50px;
@@ -592,7 +625,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       font-size: 1.2rem;
       border: 3px solid var(--success);
     }
-    
+
     /* Cards */
     .stat-card {
       background: rgba(255, 255, 255, 0.95);
@@ -605,12 +638,12 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       backdrop-filter: blur(10px);
       border-left: 5px solid var(--secondary);
     }
-    
+
     .stat-card:hover {
       transform: translateY(-8px);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
     }
-    
+
     .stat-card h5 {
       font-size: 0.9rem;
       color: #6c757d;
@@ -619,7 +652,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       letter-spacing: 1px;
       font-weight: 600;
     }
-    
+
     .stat-card .number {
       font-size: 2.5rem;
       font-weight: 800;
@@ -627,24 +660,24 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       color: var(--primary);
       line-height: 1;
     }
-    
+
     .stat-card .trend {
       font-size: 0.85rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
-    
+
     .trend.up {
       color: var(--success);
       font-weight: 600;
     }
-    
+
     .trend.down {
       color: var(--danger);
       font-weight: 600;
     }
-    
+
     /* Table Containers */
     .table-container {
       background: rgba(255, 255, 255, 0.95);
@@ -654,13 +687,14 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       margin-top: 2rem;
       backdrop-filter: blur(10px);
     }
-    
-    .table-container h4, .table-container h5 {
+
+    .table-container h4,
+    .table-container h5 {
       color: var(--primary);
       font-weight: 700;
       margin-bottom: 1.5rem;
     }
-    
+
     .table thead th {
       background: linear-gradient(135deg, var(--primary), var(--secondary));
       color: white;
@@ -671,7 +705,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    
+
     .table tbody td {
       padding: 1.2rem 1rem;
       vertical-align: middle;
@@ -679,13 +713,13 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       color: var(--primary);
       font-weight: 500;
     }
-    
+
     .table tbody tr:hover {
       background-color: rgba(52, 152, 219, 0.05);
       transform: scale(1.01);
       transition: all 0.2s ease;
     }
-    
+
     /* Badges */
     .badge {
       padding: 0.6rem 1rem;
@@ -693,13 +727,27 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       font-weight: 600;
       font-size: 0.8rem;
     }
-    
-    .badge-success { background: linear-gradient(135deg, var(--success), #27ae60) !important; }
-    .badge-warning { background: linear-gradient(135deg, var(--warning), #e67e22) !important; }
-    .badge-danger { background: linear-gradient(135deg, var(--danger), #c0392b) !important; }
-    .badge-info { background: linear-gradient(135deg, var(--info), #16a085) !important; }
-    .badge-secondary { background: linear-gradient(135deg, #95a5a6, #7f8c8d) !important; }
-    
+
+    .badge-success {
+      background: linear-gradient(135deg, var(--success), #27ae60) !important;
+    }
+
+    .badge-warning {
+      background: linear-gradient(135deg, var(--warning), #e67e22) !important;
+    }
+
+    .badge-danger {
+      background: linear-gradient(135deg, var(--danger), #c0392b) !important;
+    }
+
+    .badge-info {
+      background: linear-gradient(135deg, var(--info), #16a085) !important;
+    }
+
+    .badge-secondary {
+      background: linear-gradient(135deg, #95a5a6, #7f8c8d) !important;
+    }
+
     /* Buttons */
     .btn-primary {
       background: linear-gradient(135deg, var(--secondary), var(--primary));
@@ -709,12 +757,12 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       font-weight: 600;
       transition: all 0.3s ease;
     }
-    
+
     .btn-primary:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
     }
-    
+
     .btn-success {
       background: linear-gradient(135deg, var(--success), #27ae60);
       border: none;
@@ -723,12 +771,12 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       font-weight: 600;
       transition: all 0.3s ease;
     }
-    
+
     .btn-success:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px rgba(46, 204, 113, 0.4);
     }
-    
+
     /* ===== SELECT_BUSES.PHP STYLES ===== */
     .status-badge {
       padding: 0.5rem 1rem;
@@ -737,32 +785,32 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       font-weight: 600;
       display: inline-block;
     }
-    
+
     .badge-available {
       background: linear-gradient(135deg, var(--success), #27ae60);
       color: white;
     }
-    
+
     .badge-ontrip {
       background: linear-gradient(135deg, var(--warning), #e67e22);
       color: white;
     }
-    
+
     .badge-maintenance {
       background: linear-gradient(135deg, var(--danger), #c0392b);
       color: white;
     }
-    
+
     .badge-full {
       background: linear-gradient(135deg, #95a5a6, #7f8c8d);
       color: white;
     }
-    
+
     .badge-inactive {
       background: linear-gradient(135deg, #7f8c8d, #95a5a6);
       color: white;
     }
-    
+
     .seats-indicator {
       height: 8px;
       border-radius: 4px;
@@ -770,34 +818,56 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       overflow: hidden;
       margin-top: 0.5rem;
     }
-    
+
     .seats-filled {
       height: 100%;
       border-radius: 4px;
       transition: all 0.3s ease;
     }
-    
-    .seats-low { background: linear-gradient(135deg, var(--success), #27ae60); }
-    .seats-medium { background: linear-gradient(135deg, var(--warning), #e67e22); }
-    .seats-high { background: linear-gradient(135deg, var(--danger), #c0392b); }
-    
+
+    .seats-low {
+      background: linear-gradient(135deg, var(--success), #27ae60);
+    }
+
+    .seats-medium {
+      background: linear-gradient(135deg, var(--warning), #e67e22);
+    }
+
+    .seats-high {
+      background: linear-gradient(135deg, var(--danger), #c0392b);
+    }
+
     .bus-card {
       transition: all 0.3s ease;
       border-left: 4px solid transparent;
     }
-    
-    .bus-card-available { border-left-color: var(--success); }
-    .bus-card-ontrip { border-left-color: var(--warning); }
-    .bus-card-maintenance { border-left-color: var(--danger); }
-    .bus-card-full { border-left-color: #95a5a6; }
-    .bus-card-inactive { border-left-color: #7f8c8d; }
-    
+
+    .bus-card-available {
+      border-left-color: var(--success);
+    }
+
+    .bus-card-ontrip {
+      border-left-color: var(--warning);
+    }
+
+    .bus-card-maintenance {
+      border-left-color: var(--danger);
+    }
+
+    .bus-card-full {
+      border-left-color: #95a5a6;
+    }
+
+    .bus-card-inactive {
+      border-left-color: #7f8c8d;
+    }
+
     .quick-actions {
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
     }
-    
+
     .stats-card {
       background: rgba(255, 255, 255, 0.95);
       border-radius: 15px;
@@ -806,17 +876,18 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       margin-bottom: 1.5rem;
       transition: all 0.3s ease;
     }
-    
+
     .stats-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
     }
-    
+
     .stat-number {
       font-size: 2rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
     }
+
     /* ===== END SELECT_BUSES.PHP STYLES ===== */
 
     /* Filter and Search Section */
@@ -827,11 +898,11 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       margin-bottom: 1.5rem;
       box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
     }
-    
+
     .search-box {
       position: relative;
     }
-    
+
     .search-box i {
       position: absolute;
       left: 15px;
@@ -839,19 +910,19 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       transform: translateY(-50%);
       color: #6c757d;
     }
-    
+
     .search-box input {
       padding-left: 45px;
       border-radius: 10px;
       border: 2px solid #e9ecef;
       transition: all 0.3s ease;
     }
-    
+
     .search-box input:focus {
       border-color: var(--secondary);
       box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
     }
-    
+
     .filter-buttons .btn {
       border-radius: 10px;
       padding: 0.5rem 1.5rem;
@@ -860,49 +931,56 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       margin-bottom: 0.5rem;
       transition: all 0.3s ease;
     }
-    
+
     .filter-buttons .btn.active {
       background: linear-gradient(135deg, var(--secondary), var(--primary));
       color: white;
       border: none;
       box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
     }
-    
+
     /* Section Management */
     .dashboard-section {
       display: block;
       animation: fadeIn 0.5s ease;
     }
-    
+
     .dashboard-section.hidden {
       display: none;
     }
-    
+
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    
+
     /* Action Buttons */
     .action-buttons {
       display: flex;
       gap: 0.5rem;
       flex-wrap: wrap;
     }
-    
+
     /* No Data States */
     .no-data {
       text-align: center;
       padding: 3rem;
       color: #6c757d;
     }
-    
+
     .no-data i {
       font-size: 3rem;
       margin-bottom: 1rem;
       color: #bdc3c7;
     }
-    
+
     /* Auto Status Update Indicator */
     .auto-update-indicator {
       background: linear-gradient(135deg, var(--info), #16a085);
@@ -915,72 +993,126 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       gap: 0.5rem;
       margin-bottom: 1rem;
     }
-    
+
+    /* Settings Styles */
+    .settings-card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      transition: all 0.3s ease;
+      height: 100%;
+    }
+
+    .settings-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    }
+
+    .settings-card .card-header {
+      background: transparent;
+      border-bottom: 2px solid #e9ecef;
+      padding: 0 0 1rem 0;
+      margin-bottom: 1.5rem;
+    }
+
+    .settings-card .card-header h5 {
+      margin: 0;
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .settings-card .form-label {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .settings-card .form-control,
+    .settings-card .form-select {
+      border-radius: 8px;
+      border: 2px solid #e9ecef;
+      transition: all 0.3s ease;
+    }
+
+    .settings-card .form-control:focus,
+    .settings-card .form-select:focus {
+      border-color: var(--secondary);
+      box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    }
+
+    .settings-card .form-check-input:checked {
+      background-color: var(--success);
+      border-color: var(--success);
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .sidebar {
         width: 80px;
       }
-      
-      .sidebar-brand h4 span, .sidebar .nav-link span {
+
+      .sidebar-brand h4 span,
+      .sidebar .nav-link span {
         display: none;
       }
-      
+
       .sidebar .nav-link i {
         margin-right: 0;
         font-size: 1.3rem;
       }
-      
+
       .sidebar .nav-link {
         padding: 1rem;
         justify-content: center;
       }
-      
+
       .main-content {
         margin-left: 80px;
         padding: 1rem;
       }
-      
+
       .header {
         padding: 1rem;
       }
-      
+
       .stat-card {
         padding: 1.5rem;
       }
-      
+
       .stat-card .number {
         font-size: 2rem;
       }
-      
+
       .action-buttons {
         flex-direction: column;
       }
-      
+
       .filter-section .row {
         flex-direction: column;
       }
-      
+
       .filter-section .col-md-6 {
         margin-bottom: 1rem;
       }
     }
-    
+
     /* Custom Scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
     }
-    
+
     ::-webkit-scrollbar-track {
       background: rgba(255, 255, 255, 0.1);
     }
-    
+
     ::-webkit-scrollbar-thumb {
       background: linear-gradient(135deg, var(--secondary), var(--primary));
       border-radius: 3px;
     }
   </style>
 </head>
+
 <body>
   <!-- Sidebar -->
   <div class="sidebar">
@@ -1038,21 +1170,19 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
           </a>
         </li>
         <li class="nav-item">
-          <a href="payments.php" class="nav-link">
-            <i class="fas fa-credit-card"></i>
-            <span>Payments</span>
+          <a href="#" class="nav-link" data-section="payments-report">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span>Payments Report</span>
           </a>
         </li>
-
         <li class="nav-item">
-  <a href="#" class="nav-link" data-section="reports">
-    <i class="fas fa-chart-bar"></i>
-    <span>Reports</span>
-  </a>
-</li>
-        
+          <a href="#" class="nav-link" data-section="reports">
+            <i class="fas fa-chart-bar"></i>
+            <span>Reports</span>
+          </a>
+        </li>
         <li class="nav-item">
-          <a href="settings.php" class="nav-link">
+          <a href="#" class="nav-link" data-section="settings">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
           </a>
@@ -1197,7 +1327,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
             <i class="fas fa-eye me-2"></i>View All
           </a>
         </div>
-        
+
         <div class="table-responsive">
           <table class="table table-hover">
             <thead>
@@ -1240,63 +1370,9 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
           </table>
         </div>
       </div>
-
-      <!-- Recent Payments Table -->
-      <div class="table-container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="mb-0"><i class="fas fa-credit-card me-2"></i>Recent Payments</h4>
-          <a href="payments.php" class="btn btn-primary">
-            <i class="fas fa-eye me-2"></i>View All
-          </a>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Payment ID</th>
-                <th>Booking</th>
-                <th>Customer</th>
-                <th>Route</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th>Paid At</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if ($recent_payments->num_rows > 0): ?>
-                <?php while ($payment = $recent_payments->fetch_assoc()): ?>
-                  <tr>
-                    <td><strong>#<?php echo $payment['payment_id']; ?></strong></td>
-                    <td>#BK<?php echo str_pad($payment['booking_id'], 5, '0', STR_PAD_LEFT); ?></td>
-                    <td><?php echo htmlspecialchars(trim(($payment['firstname'] ?? '') . ' ' . ($payment['lastname'] ?? ''))); ?></td>
-                    <td><?php echo htmlspecialchars(($payment['departure'] ?? '') . ' → ' . ($payment['destination'] ?? '')); ?></td>
-                    <td><strong><?php echo number_format($payment['amount'], 2); ?> FRW</strong></td>
-                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $payment['payment_method'] ?? ''))); ?></td>
-                    <td>
-                      <span class="badge bg-success">
-                        <i class="fas fa-check-circle me-1"></i><?php echo ucfirst($payment['payment_status'] ?? 'completed'); ?>
-                      </span>
-                    </td>
-                    <td><?php echo !empty($payment['time_paid']) ? date('M j, Y H:i', strtotime($payment['time_paid'])) : 'N/A'; ?></td>
-                  </tr>
-                <?php endwhile; ?>
-              <?php else: ?>
-                <tr>
-                  <td colspan="8" class="text-center py-5 text-muted">
-                    <i class="fas fa-credit-card fa-3x mb-3"></i>
-                    <p>No recent payments found.</p>
-                  </td>
-                </tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
 
-      <!-- Fleet Section - UPDATED WITH CORRECTED LOGIC -->
+    <!-- Fleet Section - UPDATED WITH CORRECTED LOGIC -->
     <div id="manage-buses" class="dashboard-section hidden">
       <div class="table-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1318,7 +1394,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
           </div>
         <?php endif; ?>
-        
+
         <?php if (isset($error_message)): ?>
           <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <i class="fas fa-exclamation-circle me-2"></i>
@@ -1401,59 +1477,59 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                 </tr>
               </thead>
               <tbody>
-                <?php while($bus = $all_buses->fetch_assoc()): 
+                <?php while ($bus = $all_buses->fetch_assoc()):
                   // Determine status and styling based on actual database status
                   $status_class = '';
                   $status_icon = '';
                   $display_status = ucfirst($bus['status']); // Display the actual status from database
-                  
-                  switch($bus['status']) {
-                    case 'Active': 
+
+                  switch ($bus['status']) {
+                    case 'Active':
                       $status_class = 'badge-available';
                       $status_icon = 'fa-check-circle';
                       break;
-                    case 'Maintenance': 
+                    case 'Maintenance':
                       $status_class = 'badge-maintenance';
                       $status_icon = 'fa-tools';
                       break;
-                    case 'Inactive': 
+                    case 'Inactive':
                       $status_class = 'badge-inactive';
                       $status_icon = 'fa-clock';
                       break;
-                    default: 
+                    default:
                       $display_status = 'Active';
                       $status_class = 'badge-available';
                       $status_icon = 'fa-question-circle';
                   }
                 ?>
-                <tr>
-                  <td>
-                    <strong class="text-primary">#<?php echo $bus['bus_id']; ?></strong>
-                  </td>
-                  <td>
-                    <strong class="text-primary"><?php echo htmlspecialchars($bus['plates_number']); ?></strong>
-                  </td>
-                  <td><?php echo htmlspecialchars($bus['model']); ?></td>
-                  <td>
-                    <span class="fw-bold"><?php echo $bus['number_of_seats']; ?> seats</span>
-                  </td>
-                  <td>
-                    <span class="status-badge <?php echo $status_class; ?>">
-                      <i class="fas <?php echo $status_icon; ?> me-1"></i>
-                      <?php echo $display_status; ?>
-                    </span>
-                  </td>
-                  <td>
-                    <div class="action-buttons">
-                      <!-- Only Edit Button as requested -->
-                      <a href="update_buses.php?bus_id=<?php echo $bus['bus_id']; ?>" 
-                        class="btn btn-outline-warning btn-sm"
-                        title="Edit Bus">
-                        <i class="fas fa-edit"></i> Edit
-                      </a>
-                    </div>
-                  </td>
-                </tr>
+                  <tr>
+                    <td>
+                      <strong class="text-primary">#<?php echo $bus['bus_id']; ?></strong>
+                    </td>
+                    <td>
+                      <strong class="text-primary"><?php echo htmlspecialchars($bus['plates_number']); ?></strong>
+                    </td>
+                    <td><?php echo htmlspecialchars($bus['model']); ?></td>
+                    <td>
+                      <span class="fw-bold"><?php echo $bus['number_of_seats']; ?> seats</span>
+                    </td>
+                    <td>
+                      <span class="status-badge <?php echo $status_class; ?>">
+                        <i class="fas <?php echo $status_icon; ?> me-1"></i>
+                        <?php echo $display_status; ?>
+                      </span>
+                    </td>
+                    <td>
+                      <div class="action-buttons">
+                        <!-- Only Edit Button as requested -->
+                        <a href="update_buses.php?bus_id=<?php echo $bus['bus_id']; ?>"
+                          class="btn btn-outline-warning btn-sm"
+                          title="Edit Bus">
+                          <i class="fas fa-edit"></i> Edit
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
                 <?php endwhile; ?>
               </tbody>
             </table>
@@ -1471,7 +1547,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       </div>
     </div>
 
-        <!-- Manage Routes Section -->
+    <!-- Manage Routes Section -->
     <div id="manage-routes" class="dashboard-section hidden">
       <div class="table-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1563,11 +1639,11 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td>
                       <?php
                       $status_class = 'badge-secondary';
-                      switch($route['status']) {
-                        case 'active': 
+                      switch ($route['status']) {
+                        case 'active':
                           $status_class = 'badge-success';
                           break;
-                        case 'inactive': 
+                        case 'inactive':
                           $status_class = 'badge-warning';
                           break;
                       }
@@ -1603,7 +1679,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       </div>
     </div>
 
-              <!-- Manage Trips Section -->
+    <!-- Manage Trips Section -->
     <div id="manage-trips" class="dashboard-section hidden">
       <div class="table-container">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -1669,102 +1745,102 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
           </form>
         </div>
 
-       <!-- Trips Table -->
-<div class="table-responsive">
-  <table class="table table-hover">
-    <thead>
-      <tr>
-        <th>Trip ID</th>
-        <th>Bus</th>
-        <th>Driver</th>
-        <th>Route</th>
-        <th>Departure</th>
-        <th>Arrival</th>
-        <th>Available Seats</th>
-        <th>Status</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <?php if ($all_trips->num_rows > 0): ?>
-        <?php while ($trip = $all_trips->fetch_assoc()): ?>
-          <tr>
-            <td><strong>#<?php echo $trip['trip_id']; ?></strong></td>
-            <td><?php echo htmlspecialchars($trip['plates_number']); ?></td>
-            <td><?php echo htmlspecialchars($trip['driver_name']); ?></td>
-            <td><?php echo htmlspecialchars($trip['departure'] . ' → ' . $trip['destination']); ?></td>
-            <td><?php echo date('M j, Y H:i', strtotime($trip['departure_datetime'])); ?></td>
-            <td><?php echo date('M j, Y H:i', strtotime($trip['estimated_arrival'])); ?></td>
-            <td><?php echo $trip['available_seats']; ?> seats</td>
-            
-     <!-- STATUS COLUMN - UPDATED WITH CORRECT STATUS VALUES AND VISIBLE COLORS -->
-<td>
-  <?php
-  $status_class = '';
-  $status_icon = 'fa-question-circle';
-  
-  switch($trip['status']) {
-    case 'available': 
-      $status_class = 'bg-success text-white'; 
-      $status_icon = 'fa-check-circle';
-      break;
-    case 'ontrip': 
-      $status_class = 'bg-primary text-white'; 
-      $status_icon = 'fa-road';
-      break;
-    case 'arrived': 
-      $status_class = 'bg-info text-white'; 
-      $status_icon = 'fa-flag-checkered';
-      break;
-    case 'maintenance': 
-      $status_class = 'bg-warning text-dark'; 
-      $status_icon = 'fa-tools';
-      break;
-  }
-  ?>
-  <span class="badge <?php echo $status_class; ?> px-3 py-2" style="font-size: 0.85rem;">
-    <i class="fas <?php echo $status_icon; ?> me-1"></i>
-    <?php echo ucfirst($trip['status']); ?>
-  </span>
-</td>
+        <!-- Trips Table -->
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Trip ID</th>
+                <th>Bus</th>
+                <th>Driver</th>
+                <th>Route</th>
+                <th>Departure</th>
+                <th>Arrival</th>
+                <th>Available Seats</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if ($all_trips->num_rows > 0): ?>
+                <?php while ($trip = $all_trips->fetch_assoc()): ?>
+                  <tr>
+                    <td><strong>#<?php echo $trip['trip_id']; ?></strong></td>
+                    <td><?php echo htmlspecialchars($trip['plates_number']); ?></td>
+                    <td><?php echo htmlspecialchars($trip['driver_name']); ?></td>
+                    <td><?php echo htmlspecialchars($trip['departure'] . ' → ' . $trip['destination']); ?></td>
+                    <td><?php echo date('M j, Y H:i', strtotime($trip['departure_datetime'])); ?></td>
+                    <td><?php echo date('M j, Y H:i', strtotime($trip['estimated_arrival'])); ?></td>
+                    <td><?php echo $trip['available_seats']; ?> seats</td>
 
-<td>
-  <div class="action-buttons">
-    <!-- Edit button for all trips -->
-    <a href="update_trips.php?id=<?php echo $trip['trip_id']; ?>" class="btn btn-sm btn-outline-warning" title="Edit Trip">
-      <i class="fas fa-edit"></i>
-    </a>
-    
-    
-    
-    
-    <!-- Reset to Available button for arrived trips -->
-    <?php if ($trip['status'] == 'arrived'): ?>
-      <a href="update_trips.php?id=<?php echo $trip['trip_id']; ?>&status=available" 
-         class="btn btn-sm btn-success" 
-         title="Reset to Available"
-         onclick="return confirm('Reset this trip to available status?')">
-        <i class="fas fa-redo me-1"></i>Reset
-      </a>
-    <?php endif; ?>
-  </div>
-</td>
-</tr>
-<?php endwhile; ?>
-<?php else: ?>
-<tr>
-  <td colspan="9" class="text-center py-5 text-muted">
-    <i class="fas fa-road fa-3x mb-3"></i>
-    <p>No trips found in the system.</p>
-    <a href="add_trips.php" class="btn btn-primary mt-2">
-      <i class="fas fa-plus me-2"></i>Add Your First Trip
-    </a>
-  </td>
-</tr>
-<?php endif; ?>
-</tbody>
-</table>
-</div>
+                    <!-- STATUS COLUMN - UPDATED WITH CORRECT STATUS VALUES AND VISIBLE COLORS -->
+                    <td>
+                      <?php
+                      $status_class = '';
+                      $status_icon = 'fa-question-circle';
+
+                      switch ($trip['status']) {
+                        case 'available':
+                          $status_class = 'bg-success text-white';
+                          $status_icon = 'fa-check-circle';
+                          break;
+                        case 'ontrip':
+                          $status_class = 'bg-primary text-white';
+                          $status_icon = 'fa-road';
+                          break;
+                        case 'arrived':
+                          $status_class = 'bg-info text-white';
+                          $status_icon = 'fa-flag-checkered';
+                          break;
+                        case 'maintenance':
+                          $status_class = 'bg-warning text-dark';
+                          $status_icon = 'fa-tools';
+                          break;
+                      }
+                      ?>
+                      <span class="badge <?php echo $status_class; ?> px-3 py-2" style="font-size: 0.85rem;">
+                        <i class="fas <?php echo $status_icon; ?> me-1"></i>
+                        <?php echo ucfirst($trip['status']); ?>
+                      </span>
+                    </td>
+
+                    <td>
+                      <div class="action-buttons">
+                        <!-- Edit button for all trips -->
+                        <a href="update_trips.php?id=<?php echo $trip['trip_id']; ?>" class="btn btn-sm btn-outline-warning" title="Edit Trip">
+                          <i class="fas fa-edit"></i>
+                        </a>
+
+
+
+
+                        <!-- Reset to Available button for arrived trips -->
+                        <?php if ($trip['status'] == 'arrived'): ?>
+                          <a href="update_trips.php?id=<?php echo $trip['trip_id']; ?>&status=available"
+                            class="btn btn-sm btn-success"
+                            title="Reset to Available"
+                            onclick="return confirm('Reset this trip to available status?')">
+                            <i class="fas fa-redo me-1"></i>Reset
+                          </a>
+                        <?php endif; ?>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endwhile; ?>
+              <?php else: ?>
+                <tr>
+                  <td colspan="9" class="text-center py-5 text-muted">
+                    <i class="fas fa-road fa-3x mb-3"></i>
+                    <p>No trips found in the system.</p>
+                    <a href="add_trips.php" class="btn btn-primary mt-2">
+                      <i class="fas fa-plus me-2"></i>Add Your First Trip
+                    </a>
+                  </td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
 
       </div>
     </div>
@@ -1822,7 +1898,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                   <td colspan="7" class="text-center py-5 text-muted">
                     <i class="fas fa-ticket-alt fa-3x mb-3"></i>
                     <p>No bookings found in the system.</p>
-                    
+
                   </td>
                 </tr>
               <?php endif; ?>
@@ -1869,10 +1945,16 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td>
                       <?php
                       $status_class = 'badge-secondary';
-                      switch($driver['status']) {
-                        case 'active': $status_class = 'badge-success'; break;
-                        case 'on_leave': $status_class = 'badge-warning'; break;
-                        case 'inactive': $status_class = 'badge-danger'; break;
+                      switch ($driver['status']) {
+                        case 'active':
+                          $status_class = 'badge-success';
+                          break;
+                        case 'on_leave':
+                          $status_class = 'badge-warning';
+                          break;
+                        case 'inactive':
+                          $status_class = 'badge-danger';
+                          break;
                       }
                       ?>
                       <span class="badge <?php echo $status_class; ?>">
@@ -1885,7 +1967,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                         <a href="update_drivers.php?id=<?php echo $driver['driver_id']; ?>" class="btn btn-sm btn-outline-warning">
                           <i class="fas fa-edit"></i>
                         </a>
-                        
+
                       </div>
                     </td>
                   </tr>
@@ -1943,7 +2025,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                         <a href="update_customer.php?id=<?php echo $customer['customer_id']; ?>" class="btn btn-sm btn-outline-warning">
                           <i class="fas fa-edit"></i>
                         </a>
-                        
+
                       </div>
                     </td>
                   </tr>
@@ -1968,18 +2050,25 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h4 class="mb-0"><i class="fas fa-user-cog me-2"></i>User Management</h4>
           <div>
-            <a href="add_user.php" class="btn btn-success">
+            <a href="register.php" class="btn btn-success">
               <i class="fas fa-plus me-2"></i>Add New User
             </a>
           </div>
         </div>
-        
-        <div class="alert alert-info">
-          <i class="fas fa-info-circle me-2"></i>
-          User management functionality - Manage system users and access control.
-        </div>
-        
-        <!-- Users table would go here -->
+
+        <form method="GET" class="row g-3 mb-4">
+          <input type="hidden" name="section" value="manage-users">
+          <div class="col-md-4">
+            <label class="form-label text-dark fw-bold">Filter by Role</label>
+            <select name="user_role_filter" class="form-select" onchange="this.form.submit()">
+              <option value="">All Roles</option>
+              <option value="admin" <?php echo $user_role_filter == 'admin' ? 'selected' : ''; ?>>Admin</option>
+              <option value="driver" <?php echo $user_role_filter == 'driver' ? 'selected' : ''; ?>>Driver</option>
+              <option value="passenger" <?php echo $user_role_filter == 'passenger' ? 'selected' : ''; ?>>Passenger</option>
+            </select>
+          </div>
+        </form>
+
         <div class="table-responsive">
           <table class="table table-hover">
             <thead>
@@ -1988,254 +2077,473 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th>Status</th>
-                <th>Last Login</th>
+                <th>Created</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                  <i class="fas fa-users fa-2x mb-3"></i>
-                  <p>User management table - Implement user listing here</p>
-                </td>
-              </tr>
+              <?php if (!empty($all_users)): ?>
+                <?php foreach ($all_users as $user): ?>
+                  <tr>
+                    <td><strong>#<?php echo $user['id']; ?></strong></td>
+                    <td><?php echo htmlspecialchars($user['name'] ?? ''); ?></td>
+                    <td><?php echo htmlspecialchars($user['email'] ?? ''); ?></td>
+                    <td>
+                      <span class="badge <?php echo ($user['role'] ?? 'passenger') === 'admin' ? 'bg-danger' : (($user['role'] ?? 'passenger') === 'driver' ? 'bg-warning text-dark' : 'bg-info'); ?>">
+                        <?php echo htmlspecialchars(ucfirst($user['role'] ?? 'passenger')); ?>
+                      </span>
+                    </td>
+                    <td><?php echo !empty($user['created_at']) ? date('M j, Y', strtotime($user['created_at'])) : 'N/A'; ?></td>
+                    <td>
+                      <div class="action-buttons">
+                        <a href="register.php" class="btn btn-sm btn-outline-primary">
+                          <i class="fas fa-edit"></i>
+                        </a>
+                        <?php if ((int)$user['id'] !== (int)$userId): ?>
+                          <a href="admin.php?section=manage-users&delete_user=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this user?')">
+                            <i class="fas fa-trash"></i>
+                          </a>
+                        <?php endif; ?>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              <?php else: ?>
+                <tr>
+                  <td colspan="6" class="text-center py-4 text-muted">
+                    <i class="fas fa-users fa-2x mb-3"></i>
+                    <p>No users found for the selected role.</p>
+                  </td>
+                </tr>
+              <?php endif; ?>
             </tbody>
           </table>
         </div>
-<!-- Reports Section -->
-<div id="reports" class="dashboard-section hidden">
-  <div class="table-container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h4 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Trip Reports & Analytics</h4>
-      <div class="action-buttons">
-        <button class="btn btn-success" onclick="generatePDF()">
-          <i class="fas fa-file-pdf me-2"></i>Download PDF
-        </button>
-        <button class="btn btn-primary" onclick="window.print()">
-          <i class="fas fa-print me-2"></i>Print Report
-        </button>
-        <button class="btn btn-info" onclick="exportToExcel()">
-          <i class="fas fa-file-excel me-2"></i>Export Excel
-        </button>
       </div>
     </div>
 
-    <!-- Report Filters -->
-    <div class="filter-section">
-      <form method="GET" action="" id="reportFilterForm">
-        <input type="hidden" name="section" value="reports">
-        <div class="row">
-          <div class="col-md-3 mb-3">
-            <label class="form-label text-dark fw-bold">Date Range</label>
-            <input type="date" name="start_date" class="form-control" 
-                   value="<?php echo $start_date; ?>">
+    <!-- Payments Report Section -->
+    <div id="payments-report" class="dashboard-section hidden">
+      <div class="table-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>Payments Report</h4>
+          <div class="action-buttons">
+            <a href="payments.php" class="btn btn-primary">
+              <i class="fas fa-eye me-2"></i>Open Payments Page
+            </a>
           </div>
-          <div class="col-md-3 mb-3">
-            <label class="form-label text-dark fw-bold">To Date</label>
-            <input type="date" name="end_date" class="form-control" 
-                   value="<?php echo $end_date; ?>"> 
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <div class="stats-card text-center">
+              <div class="stat-number text-success">
+                <?php
+                $payments_total = $conn->query("SELECT COALESCE(SUM(amount), 0) as total FROM payments")->fetch_assoc()['total'];
+                echo number_format($payments_total); ?> FRW
+              </div>
+              <p class="mb-0 text-muted">Total Payments</p>
+            </div>
           </div>
-          <div class="col-md-3 mb-3">
-            <label class="form-label text-dark fw-bold">Route</label>
-            <select name="route_filter" class="form-select">
-              <option value="">All Routes</option>
+          <div class="col-md-4">
+            <div class="stats-card text-center">
+              <div class="stat-number text-info">
+                <?php
+                $completed_payments = $conn->query("SELECT COUNT(*) as total FROM payments WHERE payment_status = 'completed'")->fetch_assoc()['total'];
+                echo $completed_payments;
+                ?>
+              </div>
+              <p class="mb-0 text-muted">Completed Payments</p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="stats-card text-center">
+              <div class="stat-number text-warning">
+                <?php
+                $payment_methods = $conn->query("SELECT payment_method, COUNT(*) as total FROM payments GROUP BY payment_method");
+                $method_summary = [];
+                while ($row = $payment_methods->fetch_assoc()) {
+                  $method_summary[] = ucfirst(str_replace('_', ' ', $row['payment_method'])) . ': ' . $row['total'];
+                }
+                echo htmlspecialchars(implode(' | ', $method_summary));
+                ?>
+
+              </div>
+              <p class="mb-0 text-muted">Payment Methods</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Payment ID</th>
+                <th>Booking</th>
+                <th>Customer</th>
+                <th>Route</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>Paid At</th>
+              </tr>
+            </thead>
+            <tbody>
               <?php
-              $routes = $conn->query("SELECT * FROM routes ORDER BY departure, destination");
-              while($route = $routes->fetch_assoc()): 
-                $selected = ($route_filter == $route['route_id']) ? 'selected' : '';
+              $payments_report_query = "
+                SELECT p.payment_id, p.booking_id, p.amount, p.payment_method, p.transaction_id, p.payment_status, p.time_paid,
+                       c.firstname, c.lastname,
+                       r.departure, r.destination
+                FROM payments p
+                LEFT JOIN bookings b ON p.booking_id = b.booking_id
+                LEFT JOIN customers c ON b.customer_id = c.customer_id
+                LEFT JOIN trips t ON b.trip_id = t.trip_id
+                LEFT JOIN routes r ON t.route_id = r.route_id
+                ORDER BY p.time_paid DESC
+                LIMIT 100
+              ";
+              $payments_report = $conn->query($payments_report_query);
+              if ($payments_report && $payments_report->num_rows > 0) {
+                while ($payment = $payments_report->fetch_assoc()) {
               ?>
-                <option value="<?php echo $route['route_id']; ?>" <?php echo $selected; ?>>
-                  <?php echo htmlspecialchars($route['departure'] . ' → ' . $route['destination']); ?>
-                </option>
-              <?php endwhile; ?>
-            </select>
-          </div>
-          <div class="col-md-3 mb-3 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="fas fa-filter me-2"></i>Apply Filters
+                  <tr>
+                    <td><strong>#<?php echo $payment['payment_id']; ?></strong></td>
+                    <td>#BK<?php echo str_pad($payment['booking_id'], 5, '0', STR_PAD_LEFT); ?></td>
+                    <td><?php echo htmlspecialchars(trim(($payment['firstname'] ?? '') . ' ' . ($payment['lastname'] ?? ''))); ?></td>
+                    <td><?php echo htmlspecialchars(($payment['departure'] ?? '') . ' → ' . ($payment['destination'] ?? '')); ?></td>
+                    <td><strong><?php echo number_format($payment['amount'], 2); ?> FRW</strong></td>
+                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $payment['payment_method'] ?? ''))); ?></td>
+                    <td>
+                      <span class="badge bg-success">
+                        <i class="fas fa-check-circle me-1"></i><?php echo ucfirst($payment['payment_status'] ?? 'completed'); ?>
+                      </span>
+                    </td>
+                    <td><?php echo !empty($payment['time_paid']) ? date('M j, Y H:i', strtotime($payment['time_paid'])) : 'N/A'; ?></td>
+                  </tr>
+                <?php
+                }
+              } else {
+                ?>
+                <tr>
+                  <td colspan="8" class="text-center py-5 text-muted">
+                    <i class="fas fa-file-invoice-dollar fa-3x mb-3"></i>
+                    <p>No payment records found.</p>
+                  </td>
+                </tr>
+              <?php }
+              ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports Section -->
+    <div id="reports" class="dashboard-section hidden">
+      <div class="table-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Trip Reports & Analytics</h4>
+          <div class="action-buttons">
+            <button class="btn btn-success" onclick="generatePDF()">
+              <i class="fas fa-file-pdf me-2"></i>Download PDF
+            </button>
+            <button class="btn btn-primary" onclick="window.print()">
+              <i class="fas fa-print me-2"></i>Print Report
+            </button>
+            <button class="btn btn-info" onclick="exportToExcel()">
+              <i class="fas fa-file-excel me-2"></i>Export Excel
             </button>
           </div>
         </div>
-      </form>
-    </div>
 
-    <!-- Summary Statistics -->
-    <div class="row mb-4">
-      <div class="col-md-3">
-        <div class="stats-card text-center">
-          <div class="stat-number text-primary"><?php echo $summary['total_trips'] ?? 0; ?></div>
-          <p class="mb-0 text-muted">Total Trips</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="stats-card text-center">
-          <div class="stat-number text-success"><?php echo $summary['total_passengers'] ?? 0; ?></div>
-          <p class="mb-0 text-muted">Total Passengers</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="stats-card text-center">
-          <div class="stat-number text-info"><?php echo number_format($summary['avg_passengers_per_trip'] ?? 0, 1); ?></div>
-          <p class="mb-0 text-muted">Avg Passengers/Trip</p>
-        </div>
-      </div>
-      <div class="col-md-3">
-        <div class="stats-card text-center">
-          <div class="stat-number text-warning"><?php echo number_format($summary['total_revenue'] ?? 0); ?> FRW</div>
-          <p class="mb-0 text-muted">Total Revenue</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Detailed Reports Table -->
-    <div class="table-responsive" id="reportTable">
-      <table class="table table-hover">
-        <thead>
-          <tr>
-            <th>Trip ID</th>
-            <th>Route</th>
-            <th>Bus</th>
-            <th>Driver</th>
-            <th>Departure</th>
-            <th>Arrival</th>
-            <th>Passengers</th>
-            <th>Revenue</th>
-            <th>Status</th>
-            <th>Completion</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php if ($trip_reports->num_rows > 0): ?>
-            <?php while ($report = $trip_reports->fetch_assoc()): 
-              $completion_rate = $report['total_seats_sold'] > 0 ? 
-                round(($report['total_seats_sold'] / ($report['total_seats_sold'] + $report['available_seats'])) * 100, 1) : 0;
-            ?>
-              <tr>
-                <td><strong>#<?php echo $report['trip_id']; ?></strong></td>
-                <td><?php echo htmlspecialchars($report['departure'] . ' → ' . $report['destination']); ?></td>
-                <td><?php echo htmlspecialchars($report['plates_number']); ?></td>
-                <td><?php echo htmlspecialchars($report['driver_name']); ?></td>
-                <td><?php echo date('M j, Y H:i', strtotime($report['departure_datetime'])); ?></td>
-                <td><?php echo date('M j, Y H:i', strtotime($report['estimated_arrival'])); ?></td>
-                <td>
-                  <span class="fw-bold"><?php echo $report['total_seats_sold'] ?? 0; ?></span>
-                  <small class="text-muted">passengers</small>
-                </td>
-                <td>
-                  <span class="fw-bold text-success"><?php echo number_format($report['total_revenue'] ?? 0); ?> FRW</span>
-                </td>
-                <td>
+        <!-- Report Filters -->
+        <div class="filter-section">
+          <form method="GET" action="" id="reportFilterForm">
+            <input type="hidden" name="section" value="reports">
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <label class="form-label text-dark fw-bold">Date Range</label>
+                <input type="date" name="start_date" class="form-control"
+                  value="<?php echo $start_date; ?>">
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label text-dark fw-bold">To Date</label>
+                <input type="date" name="end_date" class="form-control"
+                  value="<?php echo $end_date; ?>">
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label text-dark fw-bold">Route</label>
+                <select name="route_filter" class="form-select">
+                  <option value="">All Routes</option>
                   <?php
-                  $status_class = '';
-                  switch($report['status']) {
-                    case 'available': $status_class = 'badge-success'; break;
-                    case 'ontrip': $status_class = 'badge-primary'; break;
-                    case 'arrived': $status_class = 'badge-info'; break;
-                    case 'maintenance': $status_class = 'badge-warning'; break;
-                  }
+                  $routes = $conn->query("SELECT * FROM routes ORDER BY departure, destination");
+                  while ($route = $routes->fetch_assoc()):
+                    $selected = ($route_filter == $route['route_id']) ? 'selected' : '';
                   ?>
-                  <span class="badge <?php echo $status_class; ?>">
-                    <?php echo ucfirst($report['status']); ?>
-                  </span>
-                </td>
-                <td>
-                  <div class="progress" style="height: 20px;">
-                    <div class="progress-bar 
-                      <?php echo $completion_rate >= 80 ? 'bg-success' : ($completion_rate >= 50 ? 'bg-warning' : 'bg-info'); ?>" 
-                         role="progressbar" 
-                         style="width: <?php echo $completion_rate; ?>%"
-                         aria-valuenow="<?php echo $completion_rate; ?>" 
-                         aria-valuemin="0" 
-                         aria-valuemax="100">
-                      <?php echo $completion_rate; ?>%
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            <?php endwhile; ?>
-          <?php else: ?>
-            <tr>
-              <td colspan="10" class="text-center py-5 text-muted">
-                <i class="fas fa-chart-bar fa-3x mb-3"></i>
-                <p>No trip data found for the selected period.</p>
-                <p class="small">Try adjusting your date range or filters.</p>
-              </td>
-            </tr>
-          <?php endif; ?>
-        </tbody>
-      </table>
-    </div>
+                    <option value="<?php echo $route['route_id']; ?>" <?php echo $selected; ?>>
+                      <?php echo htmlspecialchars($route['departure'] . ' → ' . $route['destination']); ?>
+                    </option>
+                  <?php endwhile; ?>
+                </select>
+              </div>
+              <div class="col-md-3 mb-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                  <i class="fas fa-filter me-2"></i>Apply Filters
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
 
-    <!-- Additional Analysis Sections -->
-    <div class="row mt-4">
-      <!-- Revenue Analysis -->
-      <div class="col-md-6">
-        <div class="table-container">
-          <h5><i class="fas fa-money-bill-wave me-2"></i>Revenue by Route</h5>
-          <div class="table-responsive">
-            <table class="table table-sm">
-              <thead>
-                <tr>
-                  <th>Route</th>
-                  <th>Trips</th>
-                  <th>Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php while($route_revenue = $revenue_by_route->fetch_assoc()): ?>
-                  <tr>
-                    <td><?php echo htmlspecialchars($route_revenue['departure'] . ' → ' . $route_revenue['destination']); ?></td>
-                    <td><?php echo $route_revenue['trips_count'] ?? 0; ?></td>
-                    <td class="fw-bold text-success"><?php echo number_format($route_revenue['route_revenue'] ?? 0); ?> FRW</td>
-                  </tr>
-                <?php endwhile; ?>
-              </tbody>
-            </table>
+        <!-- Summary Statistics -->
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <div class="stats-card text-center">
+              <div class="stat-number text-primary"><?php echo $summary['total_trips'] ?? 0; ?></div>
+              <p class="mb-0 text-muted">Total Trips</p>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stats-card text-center">
+              <div class="stat-number text-success"><?php echo $summary['total_passengers'] ?? 0; ?></div>
+              <p class="mb-0 text-muted">Total Passengers</p>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stats-card text-center">
+              <div class="stat-number text-info"><?php echo number_format($summary['avg_passengers_per_trip'] ?? 0, 1); ?></div>
+              <p class="mb-0 text-muted">Avg Passengers/Trip</p>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="stats-card text-center">
+              <div class="stat-number text-warning"><?php echo number_format($summary['total_revenue'] ?? 0); ?> FRW</div>
+              <p class="mb-0 text-muted">Total Revenue</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Performance Analysis -->
-      <div class="col-md-6">
-        <div class="table-container">
-          <h5><i class="fas fa-tachometer-alt me-2"></i>Trip Performance</h5>
-          <div class="text-center py-4">
-            <div class="display-4 fw-bold text-primary"><?php echo $completion_rate; ?>%</div>
-            <p class="text-muted">Trip Completion Rate</p>
-            <div class="row text-center">
-              <div class="col-4">
-                <div class="fw-bold text-success"><?php echo $performance_stats['completed_trips']; ?></div>
-                <small>Completed</small>
+        <!-- Detailed Reports Table -->
+        <div class="table-responsive" id="reportTable">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Trip ID</th>
+                <th>Route</th>
+                <th>Bus</th>
+                <th>Driver</th>
+                <th>Departure</th>
+                <th>Arrival</th>
+                <th>Passengers</th>
+                <th>Revenue</th>
+                <th>Status</th>
+                <th>Completion</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php if ($trip_reports->num_rows > 0): ?>
+                <?php while ($report = $trip_reports->fetch_assoc()):
+                  $completion_rate = $report['total_seats_sold'] > 0 ?
+                    round(($report['total_seats_sold'] / ($report['total_seats_sold'] + $report['available_seats'])) * 100, 1) : 0;
+                ?>
+                  <tr>
+                    <td><strong>#<?php echo $report['trip_id']; ?></strong></td>
+                    <td><?php echo htmlspecialchars($report['departure'] . ' → ' . $report['destination']); ?></td>
+                    <td><?php echo htmlspecialchars($report['plates_number']); ?></td>
+                    <td><?php echo htmlspecialchars($report['driver_name']); ?></td>
+                    <td><?php echo date('M j, Y H:i', strtotime($report['departure_datetime'])); ?></td>
+                    <td><?php echo date('M j, Y H:i', strtotime($report['estimated_arrival'])); ?></td>
+                    <td>
+                      <span class="fw-bold"><?php echo $report['total_seats_sold'] ?? 0; ?></span>
+                      <small class="text-muted">passengers</small>
+                    </td>
+                    <td>
+                      <span class="fw-bold text-success"><?php echo number_format($report['total_revenue'] ?? 0); ?> FRW</span>
+                    </td>
+                    <td>
+                      <?php
+                      $status_class = '';
+                      switch ($report['status']) {
+                        case 'available':
+                          $status_class = 'badge-success';
+                          break;
+                        case 'ontrip':
+                          $status_class = 'badge-primary';
+                          break;
+                        case 'arrived':
+                          $status_class = 'badge-info';
+                          break;
+                        case 'maintenance':
+                          $status_class = 'badge-warning';
+                          break;
+                      }
+                      ?>
+                      <span class="badge <?php echo $status_class; ?>">
+                        <?php echo ucfirst($report['status']); ?>
+                      </span>
+                    </td>
+                    <td>
+                      <div class="progress" style="height: 20px;">
+                        <div class="progress-bar 
+                      <?php echo $completion_rate >= 80 ? 'bg-success' : ($completion_rate >= 50 ? 'bg-warning' : 'bg-info'); ?>"
+                          role="progressbar"
+                          style="width: <?php echo $completion_rate; ?>%"
+                          aria-valuenow="<?php echo $completion_rate; ?>"
+                          aria-valuemin="0"
+                          aria-valuemax="100">
+                          <?php echo $completion_rate; ?>%
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                <?php endwhile; ?>
+              <?php else: ?>
+                <tr>
+                  <td colspan="10" class="text-center py-5 text-muted">
+                    <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                    <p>No trip data found for the selected period.</p>
+                    <p class="small">Try adjusting your date range or filters.</p>
+                  </td>
+                </tr>
+              <?php endif; ?>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Additional Analysis Sections -->
+        <div class="row mt-4">
+          <!-- Revenue Analysis -->
+          <div class="col-md-6">
+            <div class="table-container">
+              <h5><i class="fas fa-money-bill-wave me-2"></i>Revenue by Route</h5>
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Route</th>
+                      <th>Trips</th>
+                      <th>Revenue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php while ($route_revenue = $revenue_by_route->fetch_assoc()): ?>
+                      <tr>
+                        <td><?php echo htmlspecialchars($route_revenue['departure'] . ' → ' . $route_revenue['destination']); ?></td>
+                        <td><?php echo $route_revenue['trips_count'] ?? 0; ?></td>
+                        <td class="fw-bold text-success"><?php echo number_format($route_revenue['route_revenue'] ?? 0); ?> FRW</td>
+                      </tr>
+                    <?php endwhile; ?>
+                  </tbody>
+                </table>
               </div>
-              <div class="col-4">
-                <div class="fw-bold text-warning"><?php echo $performance_stats['ongoing_trips']; ?></div>
-                <small>Ongoing</small>
-              </div>
-              <div class="col-4">
-                <div class="fw-bold text-info"><?php echo $performance_stats['upcoming_trips']; ?></div>
-                <small>Upcoming</small>
+            </div>
+          </div>
+
+          <!-- Performance Analysis -->
+          <div class="col-md-6">
+            <div class="table-container">
+              <h5><i class="fas fa-tachometer-alt me-2"></i>Trip Performance</h5>
+              <div class="text-center py-4">
+                <div class="display-4 fw-bold text-primary"><?php echo $completion_rate; ?>%</div>
+                <p class="text-muted">Trip Completion Rate</p>
+                <div class="row text-center">
+                  <div class="col-4">
+                    <div class="fw-bold text-success"><?php echo $performance_stats['completed_trips']; ?></div>
+                    <small>Completed</small>
+                  </div>
+                  <div class="col-4">
+                    <div class="fw-bold text-warning"><?php echo $performance_stats['ongoing_trips']; ?></div>
+                    <small>Ongoing</small>
+                  </div>
+                  <div class="col-4">
+                    <div class="fw-bold text-info"><?php echo $performance_stats['upcoming_trips']; ?></div>
+                    <small>Upcoming</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
+
+    <!-- Settings Section - No Database Required -->
+    <div id="settings" class="dashboard-section hidden">
+      <div class="table-container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h4 class="mb-0"><i class="fas fa-cog me-2"></i>System Settings</h4>
+        </div>
+
+        <div class="row g-4">
+          <!-- Profile Settings -->
+          <div class="col-md-6">
+            <div class="settings-card">
+              <div class="card-header">
+                <h5><i class="fas fa-user me-2 text-primary"></i>Profile Settings</h5>
+              </div>
+              <div class="card-body">
+                <form>
+                  <div class="mb-3">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-control" value="Admin Swift" placeholder="Enter your name">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-control" value="admin@swiftpass.com" placeholder="Enter your email">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" class="form-control" value="+250 788 123 456" placeholder="Enter phone number">
+                  </div>
+                  <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-save me-2"></i>Update Profile
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- Password Settings -->
+          <div class="col-md-6">
+            <div class="settings-card">
+              <div class="card-header">
+                <h5><i class="fas fa-lock me-2 text-warning"></i>Change Password</h5>
+              </div>
+              <div class="card-body">
+                <form>
+                  <div class="mb-3">
+                    <label class="form-label">Current Password</label>
+                    <input type="password" class="form-control" placeholder="Enter current password">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">New Password</label>
+                    <input type="password" class="form-control" placeholder="Enter new password">
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Confirm New Password</label>
+                    <input type="password" class="form-control" placeholder="Confirm new password">
+                  </div>
+                  <button type="submit" class="btn btn-warning w-100 text-dark">
+                    <i class="fas fa-key me-2"></i>Change Password
+                  </button>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
 
-    </div>
   </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // Your existing JavaScript remains exactly the same
     document.addEventListener('DOMContentLoaded', function() {
       const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
       const sections = document.querySelectorAll('.dashboard-section');
@@ -2275,11 +2583,19 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
           title: 'User Management 🔐',
           subtitle: 'Manage system users and accounts'
         },
+        'payments-report': {
+          title: 'Payments Report 💳',
+          subtitle: 'Track payment activity and payment summaries'
+        },
         'reports': {
-        title: 'Trip Reports & Analytics 📊',
-        subtitle: 'Comprehensive trip analysis and performance reports'
-    }
-};
+          title: 'Trip Reports & Analytics 📊',
+          subtitle: 'Comprehensive trip analysis and performance reports'
+        },
+        'settings': {
+          title: 'System Settings ⚙️',
+          subtitle: 'Configure and customize your system preferences'
+        }
+      };
 
       function showSection(sectionId) {
         // Hide all sections
@@ -2363,10 +2679,10 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       actionButtons.forEach(button => {
         button.addEventListener('click', function(e) {
           const action = this.href.includes('assign_bus') ? 'assign' : 'release';
-          const message = action === 'assign' 
-            ? 'Are you sure you want to assign this bus to a new trip?' 
-            : 'Are you sure you want to release this bus?';
-          
+          const message = action === 'assign' ?
+            'Are you sure you want to assign this bus to a new trip?' :
+            'Are you sure you want to release this bus?';
+
           if (!confirm(message)) {
             e.preventDefault();
           }
@@ -2377,7 +2693,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       setTimeout(() => {
         window.location.reload();
       }, 120000); // 2 minutes
-      
+
       // Real-time departure time checker (every 30 seconds)
       setInterval(() => {
         const currentSection = document.querySelector('.dashboard-section:not(.hidden)');
@@ -2395,7 +2711,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
         bsAlert.close();
       });
     }, 5000);
-    
+
     // Function to manually trigger departure time check
     function checkDepartureTimes() {
       fetch('?section=manage-buses&refresh_status=1')
@@ -2409,100 +2725,104 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
     }
 
     // Auto-submit route search form when typing stops (with delay)
-const routeSearchInput = document.querySelector('input[name="route_search"]');
-if (routeSearchInput) {
-    let routeSearchTimeout;
-    routeSearchInput.addEventListener('input', function() {
+    const routeSearchInput = document.querySelector('input[name="route_search"]');
+    if (routeSearchInput) {
+      let routeSearchTimeout;
+      routeSearchInput.addEventListener('input', function() {
         clearTimeout(routeSearchTimeout);
         routeSearchTimeout = setTimeout(() => {
-            document.getElementById('routeFilterForm').submit();
+          document.getElementById('routeFilterForm').submit();
         }, 800);
-    });
-}
-// Auto-submit trip search form when typing stops (with delay)
-const tripSearchInput = document.querySelector('input[name="trip_search"]');
-if (tripSearchInput) {
-    let tripSearchTimeout;
-    tripSearchInput.addEventListener('input', function() {
+      });
+    }
+    // Auto-submit trip search form when typing stops (with delay)
+    const tripSearchInput = document.querySelector('input[name="trip_search"]');
+    if (tripSearchInput) {
+      let tripSearchTimeout;
+      tripSearchInput.addEventListener('input', function() {
         clearTimeout(tripSearchTimeout);
         tripSearchTimeout = setTimeout(() => {
-            document.getElementById('tripFilterForm').submit();
+          document.getElementById('tripFilterForm').submit();
         }, 800);
-    });
-}
+      });
+    }
 
-// Export functions
-function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // Add title
-    doc.setFontSize(20);
-    doc.text('Trip Reports - SwiftPass', 20, 20);
-    
-    // Add date range
-    doc.setFontSize(12);
-    const startDate = document.querySelector('input[name="start_date"]').value;
-    const endDate = document.querySelector('input[name="end_date"]').value;
-    doc.text(`Date Range: ${startDate} to ${endDate}`, 20, 30);
-    
-    // Add summary statistics
-    doc.text('Summary Statistics:', 20, 45);
-    const stats = document.querySelectorAll('.stats-card .stat-number');
-    doc.text(`Total Trips: ${stats[0].textContent}`, 30, 55);
-    doc.text(`Total Passengers: ${stats[1].textContent}`, 30, 65);
-    doc.text(`Average Passengers/Trip: ${stats[2].textContent}`, 30, 75);
-    doc.text(`Total Revenue: ${stats[3].textContent}`, 30, 85);
-    
-    // Save the PDF
-    doc.save(`trip-reports-${startDate}-to-${endDate}.pdf`);
-}
+    // Export functions
+    function generatePDF() {
+      const {
+        jsPDF
+      } = window.jspdf;
+      const doc = new jsPDF();
 
-function exportToExcel() {
-    // Create a simple CSV export
-    let csv = 'Trip ID,Route,Bus,Driver,Departure,Arrival,Passengers,Revenue,Status,Completion Rate\n';
-    
-    document.querySelectorAll('#reportTable tbody tr').forEach(row => {
+      // Add title
+      doc.setFontSize(20);
+      doc.text('Trip Reports - SwiftPass', 20, 20);
+
+      // Add date range
+      doc.setFontSize(12);
+      const startDate = document.querySelector('input[name="start_date"]').value;
+      const endDate = document.querySelector('input[name="end_date"]').value;
+      doc.text(`Date Range: ${startDate} to ${endDate}`, 20, 30);
+
+      // Add summary statistics
+      doc.text('Summary Statistics:', 20, 45);
+      const stats = document.querySelectorAll('.stats-card .stat-number');
+      doc.text(`Total Trips: ${stats[0].textContent}`, 30, 55);
+      doc.text(`Total Passengers: ${stats[1].textContent}`, 30, 65);
+      doc.text(`Average Passengers/Trip: ${stats[2].textContent}`, 30, 75);
+      doc.text(`Total Revenue: ${stats[3].textContent}`, 30, 85);
+
+      // Save the PDF
+      doc.save(`trip-reports-${startDate}-to-${endDate}.pdf`);
+    }
+
+    function exportToExcel() {
+      // Create a simple CSV export
+      let csv = 'Trip ID,Route,Bus,Driver,Departure,Arrival,Passengers,Revenue,Status,Completion Rate\n';
+
+      document.querySelectorAll('#reportTable tbody tr').forEach(row => {
         const cells = row.querySelectorAll('td');
         if (cells.length >= 10) {
-            const rowData = [
-                cells[0].textContent.trim(),
-                cells[1].textContent.trim(),
-                cells[2].textContent.trim(),
-                cells[3].textContent.trim(),
-                cells[4].textContent.trim(),
-                cells[5].textContent.trim(),
-                cells[6].querySelector('.fw-bold')?.textContent.trim() || '0',
-                cells[7].textContent.trim().replace(' FRW', ''),
-                cells[8].textContent.trim(),
-                cells[9].querySelector('.progress-bar')?.textContent.trim() || '0%'
-            ];
-            csv += rowData.map(field => `"${field}"`).join(',') + '\n';
+          const rowData = [
+            cells[0].textContent.trim(),
+            cells[1].textContent.trim(),
+            cells[2].textContent.trim(),
+            cells[3].textContent.trim(),
+            cells[4].textContent.trim(),
+            cells[5].textContent.trim(),
+            cells[6].querySelector('.fw-bold')?.textContent.trim() || '0',
+            cells[7].textContent.trim().replace(' FRW', ''),
+            cells[8].textContent.trim(),
+            cells[9].querySelector('.progress-bar')?.textContent.trim() || '0%'
+          ];
+          csv += rowData.map(field => `"${field}"`).join(',') + '\n';
         }
-    });
-    
-    // Create download link
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `trip-reports-${document.querySelector('input[name="start_date"]').value}-to-${document.querySelector('input[name="end_date"]').value}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-}
+      });
 
-// Auto-submit report filter form when dates change
-const reportDateInputs = document.querySelectorAll('#reportFilterForm input[type="date"]');
-reportDateInputs.forEach(input => {
-    input.addEventListener('change', function() {
+      // Create download link
+      const blob = new Blob([csv], {
+        type: 'text/csv'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `trip-reports-${document.querySelector('input[name="start_date"]').value}-to-${document.querySelector('input[name="end_date"]').value}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+
+    // Auto-submit report filter form when dates change
+    const reportDateInputs = document.querySelectorAll('#reportFilterForm input[type="date"]');
+    reportDateInputs.forEach(input => {
+      input.addEventListener('change', function() {
         document.getElementById('reportFilterForm').submit();
+      });
     });
-});
-
   </script>
 </body>
+
 </html>
 <?php
 $conn->close();

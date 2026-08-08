@@ -772,27 +772,9 @@
             <i class="fas fa-user-plus"></i>
             Create Account
           </button>
-
-          <!-- Divider -->
-          <div class="divider">
-            <span>OR CONTINUE WITH</span>
-          </div>
-
-          <!-- Google Sign Up -->
-         <a href="https://accounts.google.com/signin" target="_blank">
-  <button type="button" class="btn btn-google" id="googleSignUpBtn">
-    <img src="https://www.google.com/favicon.ico" alt="Google" class="google-icon">
-    Sign up with Google
-  </button>
-</a>
-
-
-          <!-- Sign In Link -->
-          <div class="signin-link">
-            Already have an account? <a href="index.php">Sign in here</a>
-          </div>
-          
-        </form>
+<a href="login.php" class="bottom-link">login here</a>
+    </div>
+         </form>
    <?php
 include('connection.php');
 
@@ -819,14 +801,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $check->close();
 
-    // Plain-text password
-    $passwordToStore = $pass;
+    // Securely hash the password before saving
+    $passwordToStore = password_hash($pass, PASSWORD_DEFAULT);
 
     // Default role
-    $role = 'user';
+    $role = 'passenger';
 
     // Insert into database
-    $sql = "INSERT INTO users (firstName, lastName, email, contact, password, role) VALUES (?, ?, ?, ?, ?, ?)";
+    $sql = "INSERT INTO users (firstname, lastname, email, contact, password, role) VALUES (?, ?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
     if (!$stmt) die("Prepare failed: " . $conn->error);
 

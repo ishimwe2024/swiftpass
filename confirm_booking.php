@@ -10,35 +10,228 @@ if (!isset($_SESSION['user_id'])) {
 
 $userId = $_SESSION['user_id'];
 
-// Get data from POST (already stored in session)
-$passenger_name = $_POST['firstName'] . ' ' . $_POST['lastName'];
-$passenger_phone = $_POST['phone'];
-$passenger_email = $_POST['email'];
-$number_of_seats = $_POST['seatCount'];
-$bus_plaque = $_POST['plate_nbr'];
-$bus_name = $_POST['bus_name'];
-$route_name = $_POST['route_name'];
-$price = $_POST['price'];
-$travel_date = $_POST['travel_date'];
-$total_amount = $price * $number_of_seats;
-$trip_id = $_POST['trip_id'];
+// Load user info
+$passenger_name = '';
+$passenger_phone = '';
+$passenger_email = '';
+$user_stmt = $conn->prepare("SELECT firstname, lastname, contact, email FROM users WHERE id = ? LIMIT 1");
+if ($user_stmt) {
+    $user_stmt->bind_param('i', $userId);
+    $user_stmt->execute();
+    $user_res = $user_stmt->get_result();
+    $user_row = $user_res->fetch_assoc();
+    if ($user_row) {
+        $passenger_name = trim(($user_row['firstname'] ?? '') . ' ' . ($user_row['lastname'] ?? ''));
+        $passenger_phone = $user_row['contact'] ?? '';
+        $passenger_email = $user_row['email'] ?? '';
+    }
+    $user_stmt->close();
+}
 
-// Store booking details in session (no DB insert yet)
-$_SESSION['pending_booking'] = [
-    'customer_id' => $userId,
-    'trip_id' => $trip_id,
-    'number_of_seats' => $number_of_seats,
-    'passenger_name' => $passenger_name,
-    'passenger_phone' => $passenger_phone,
-    'passenger_email' => $passenger_email,
-    'bus_plaque' => $bus_plaque,
-    'bus_name' => $bus_name,
-    'route_name' => $route_name,
-    'travel_date' => $travel_date,
-    'total_amount' => $total_amount,
-    'price_per_seat' => $price
-];
-$_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
+// Get POST values
+$number_of_seats = isset($_POST['seatCount']) ? (int)$_POST['seatCount'] : 1;
+$bus_plaque = $_POST['plate_nbr'] ?? '';
+$bus_name = $_POST['bus_name'] ?? '';
+$route_name = $_POST['route_name'] ?? '';
+$price = isset($_POST['price']) ? (float)$_POST['price'] : 0;
+$travel_date = $_POST['travel_date'] ?? '';
+$total_amount = $price * max(1, $number_of_seats);
+$trip_id = $_POST['trip_id'] ?? null;
+$posted_firstname = $_POST['firstName'] ?? '';
+$posted_lastname = $_POST['lastName'] ?? '';
+$posted_email = $_POST['email'] ?? '';
+$posted_phone = $_POST['phone'] ?? '';
+
+// Use POST values if available, fallback to DB values
+$firstname = !empty($posted_firstname) ? $posted_firstname : ($user_row['firstname'] ?? '');
+$lastname = !empty($posted_lastname) ? $posted_lastname : ($user_row['lastname'] ?? '');
+$email = !empty($posted_email) ? $posted_email : ($user_row['email'] ?? '');
+$phone = !empty($posted_phone) ? $posted_phone : ($user_row['contact'] ?? '');
+
+// ===== HANDLE BOOKING CREATION =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_booking') {
+    error_reporting(0);
+    ini_set('display_errors', 0);
+    header('Content-Type: application/json');
+
+    try {
+        $user_id = (int)$_POST['user_id'];
+        $trip_id = (int)$_POST['trip_id'];
+        $number_of_seats = (int)$_POST['number_of_seats'];
+        $payment_method = $conn->real_escape_string($_POST['payment_method']);
+        $amount = (float)$_POST['amount'];
+        $firstname = $conn->real_escape_string($_POST['firstname']);
+        $lastname = $conn->real_escape_string($_POST['lastname']);
+        $email = $conn->real_escape_string($_POST['email']);
+        $contact = $conn->real_escape_string($_POST['contact']);
+
+        // Validate
+        if (empty($trip_id) || $trip_id <= 0) {
+            throw new Exception("Invalid trip ID");
+        }
+        if (empty($number_of_seats) || $number_of_seats <= 0) {
+            throw new Exception("Invalid number of seats");
+        }
+        if (empty($payment_method)) {
+            throw new Exception("Please select a payment method");
+        }
+        if (empty($email)) {
+            throw new Exception("Email is required");
+        }
+
+        $conn->begin_transaction();
+
+        // 1. Check if customer exists
+        $customer_id = null;
+        $customer_check = $conn->query("SELECT customer_id FROM customers WHERE email = '$email' LIMIT 1");
+
+        if ($customer_check && $customer_check->num_rows > 0) {
+            $customer_row = $customer_check->fetch_assoc();
+            $customer_id = $customer_row['customer_id'];
+            // Update customer details
+            $update_customer = $conn->prepare(
+                "UPDATE customers SET firstname = ?, lastname = ?, contact = ? WHERE customer_id = ?"
+            );
+            $update_customer->bind_param("sssi", $firstname, $lastname, $contact, $customer_id);
+            $update_customer->execute();
+            $update_customer->close();
+        } else {
+            $insert_customer = $conn->prepare(
+                "INSERT INTO customers (firstname, lastname, contact, email, created_at) 
+                 VALUES (?, ?, ?, ?, NOW())"
+            );
+            $insert_customer->bind_param("ssss", $firstname, $lastname, $contact, $email);
+            if (!$insert_customer->execute()) {
+                throw new Exception("Failed to create customer: " . $conn->error);
+            }
+            $customer_id = $conn->insert_id;
+            $insert_customer->close();
+        }
+
+        // 2. Create booking
+        $booking_date = date('Y-m-d H:i:s');
+        $insert_booking = $conn->prepare(
+            "INSERT INTO bookings (customer_id, trip_id, number_of_seats, booking_date) 
+             VALUES (?, ?, ?, ?)"
+        );
+        $insert_booking->bind_param("iiis", $customer_id, $trip_id, $number_of_seats, $booking_date);
+        if (!$insert_booking->execute()) {
+            throw new Exception("Failed to create booking: " . $conn->error);
+        }
+        $booking_id = $conn->insert_id;
+        $insert_booking->close();
+
+        // 3. Create payment record
+        $payment_status = 'completed';
+        $transaction_id = 'TXN_' . time() . '_' . rand(10000, 99999);
+        $time_paid = date('Y-m-d H:i:s');
+        $insert_payment = $conn->prepare(
+            "INSERT INTO payments (booking_id, amount, payment_method, transaction_id, payment_status, time_paid) 
+             VALUES (?, ?, ?, ?, ?, ?)"
+        );
+        $insert_payment->bind_param("idssss", $booking_id, $amount, $payment_method, $transaction_id, $payment_status, $time_paid);
+        if (!$insert_payment->execute()) {
+            throw new Exception("Failed to create payment: " . $conn->error);
+        }
+        $insert_payment->close();
+
+        // 4. Create ticket record - SET checked = 'no' (THIS IS CORRECT)
+        $checked = 'no';
+        $insert_ticket = $conn->prepare(
+            "INSERT INTO tickets (booking_id, checked, checked_at, created_at) 
+             VALUES (?, ?, NULL, NOW())"
+        );
+        $insert_ticket->bind_param("is", $booking_id, $checked);
+        if (!$insert_ticket->execute()) {
+            throw new Exception("Failed to create ticket: " . $conn->error);
+        }
+        $ticket_id = $conn->insert_id;
+        $insert_ticket->close();
+
+        // 5. Update available seats
+        $update_seats = $conn->prepare(
+            "UPDATE trips SET available_seats = available_seats - ? WHERE trip_id = ? AND available_seats >= ?"
+        );
+        $update_seats->bind_param("iii", $number_of_seats, $trip_id, $number_of_seats);
+        if (!$update_seats->execute()) {
+            throw new Exception("Failed to update available seats: " . $conn->error);
+        }
+        if ($conn->affected_rows == 0) {
+            throw new Exception("Not enough seats available for this trip");
+        }
+        $update_seats->close();
+
+        // 6. Clear session
+        unset($_SESSION['pending_booking']);
+        unset($_SESSION['temp_booking_ref']);
+
+        $conn->commit();
+
+        // Return success with ticket_id and booking_id
+        echo json_encode([
+            'success' => true,
+            'booking_id' => $booking_id,
+            'ticket_id' => $ticket_id,
+            'message' => 'Booking and ticket created successfully'
+        ]);
+
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+// Handle regular form submission (not AJAX)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
+    // Store in session and redirect to confirm page
+    $_SESSION['pending_booking'] = [
+        'customer_id' => $userId,
+        'trip_id' => $trip_id,
+        'number_of_seats' => $number_of_seats,
+        'passenger_name' => trim($firstname . ' ' . $lastname),
+        'passenger_phone' => $phone,
+        'passenger_email' => $email,
+        'bus_plaque' => $bus_plaque,
+        'bus_name' => $bus_name,
+        'route_name' => $route_name,
+        'travel_date' => $travel_date,
+        'total_amount' => $total_amount,
+        'price_per_seat' => $price,
+        'firstname' => $firstname,
+        'lastname' => $lastname,
+        'contact' => $phone,
+        'email' => $email
+    ];
+    $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
+
+    // Redirect to confirm page
+    header("Location: confirm_booking.php");
+    exit;
+}
+
+// Get ticket stats
+$total_tickets = 0;
+$checked_tickets = 0;
+$unchecked_tickets = 0;
+
+$total_result = $conn->query("SELECT COUNT(*) as total FROM tickets");
+if ($total_result) {
+    $total_tickets = $total_result->fetch_assoc()['total'];
+}
+
+$checked_result = $conn->query("SELECT COUNT(*) as total FROM tickets WHERE checked = 'yes'");
+if ($checked_result) {
+    $checked_tickets = $checked_result->fetch_assoc()['total'];
+}
+
+$unchecked_result = $conn->query("SELECT COUNT(*) as total FROM tickets WHERE checked = 'no'");
+if ($unchecked_result) {
+    $unchecked_tickets = $unchecked_result->fetch_assoc()['total'];
+}
 ?>
 
 <!DOCTYPE html>
@@ -46,11 +239,9 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SwiftPass | Confirm Booking & Payment</title>
+    <title>SwiftPass | Confirm Booking</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Your existing CSS (keep as is) -->
     <style>
         :root {
             --primary: #1f4ed8;
@@ -58,7 +249,6 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
             --accent: #22c55e;
             --accent-soft: #dcfce7;
             --surface: rgba(255, 255, 255, 0.95);
-            --surface-2: rgba(248, 250, 252, 0.96);
             --text: #0f172a;
             --muted: #64748b;
             --border: rgba(148, 163, 184, 0.24);
@@ -194,42 +384,6 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
             font-weight: 700;
         }
 
-        .steps-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 18px;
-            flex-wrap: wrap;
-        }
-
-        .step-pill {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 14px;
-            background: rgba(255,255,255,0.9);
-            color: #475569;
-            border-radius: 999px;
-            font-size: 0.92rem;
-            font-weight: 700;
-            border: 1px solid rgba(255,255,255,0.45);
-            box-shadow: 0 10px 20px rgba(15,23,42,0.08);
-        }
-
-        .step-pill.active {
-            background: linear-gradient(135deg, var(--primary), #2563eb);
-            color: white;
-        }
-
-        .step-pill span {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: grid;
-            place-items: center;
-            font-size: 0.82rem;
-            background: rgba(255,255,255,0.25);
-        }
-
         .glass-card {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -239,7 +393,11 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
             margin-bottom: 18px;
         }
 
-        .grid-2 { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 18px; }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 18px;
+        }
 
         .section-title {
             display: flex;
@@ -261,7 +419,6 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
             padding: 10px 0;
             border-bottom: 1px solid #e2e8f0;
         }
-
         .detail-row:last-child { border-bottom: 0; }
         .detail-label { color: var(--muted); font-weight: 600; }
         .detail-value { font-weight: 700; color: var(--text); text-align: right; }
@@ -291,7 +448,11 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
             font-size: 0.78rem;
         }
 
-        .payment-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .payment-options {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
 
         .payment-option {
             border: 1px solid #e2e8f0;
@@ -360,6 +521,33 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
         #paymentStatus { margin-top: 14px; }
         .alert { border-radius: 16px; border: 0; }
 
+        .ticket-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .ticket-stat-box {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .ticket-stat-box .number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        .ticket-stat-box .label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
         @media (max-width: 992px) {
             .grid-2 { grid-template-columns: 1fr; }
             .payment-options { grid-template-columns: 1fr; }
@@ -372,9 +560,11 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
             .topbar { flex-direction: column; align-items: flex-start; }
             .footer-actions { flex-direction: column; align-items: stretch; }
             .footer-actions .btn { width: 100%; }
+            .ticket-stats { grid-template-columns: 1fr; }
         }
     </style>
 </head>
+
 <body>
     <div class="page-shell">
         <aside class="sidebar">
@@ -385,9 +575,8 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
                     <p>Secure travel booking</p>
                 </div>
             </div>
-
             <a href="homepage.php" class="nav-link"><i class="fas fa-home"></i> Dashboard</a>
-            <a href="bookingpage.php" class="nav-link active"><i class="fas fa-ticket-alt"></i> Bookings</a>
+            <a href="bookingpage.php" class="nav-link"><i class="fas fa-ticket-alt"></i> Bookings</a>
             <a href="setting.php" class="nav-link"><i class="fas fa-cog"></i> Settings</a>
             <a href="logout.php" class="nav-link"><i class="fas fa-sign-out-alt"></i> Log Out</a>
         </aside>
@@ -408,19 +597,13 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
                 </div>
             </header>
 
-            <div class="steps-row">
-                <div class="step-pill active"><span>1</span> Review</div>
-                <div class="step-pill active"><span>2</span> Pay securely</div>
-                <div class="step-pill"><span>3</span> Receive ticket</div>
-            </div>
-
             <div class="grid-2">
                 <div class="glass-card">
                     <div class="section-title"><i class="fas fa-user"></i> Passenger details</div>
                     <div class="detail-list">
-                        <div class="detail-row"><span class="detail-label">Full name</span><span class="detail-value"><?php echo htmlspecialchars($passenger_name); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value"><?php echo htmlspecialchars($passenger_phone); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value"><?php echo htmlspecialchars($passenger_email); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Full name</span><span class="detail-value"><?php echo htmlspecialchars($firstname . ' ' . $lastname); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value"><?php echo htmlspecialchars($phone); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value"><?php echo htmlspecialchars($email); ?></span></div>
                         <div class="detail-row"><span class="detail-label">Seats</span><span class="detail-value"><?php echo htmlspecialchars($number_of_seats); ?> seat(s)</span></div>
                     </div>
                 </div>
@@ -428,10 +611,10 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
                 <div class="glass-card">
                     <div class="section-title"><i class="fas fa-route"></i> Trip summary</div>
                     <div class="detail-list">
-                        <div class="detail-row"><span class="detail-label">Bus</span><span class="detail-value"><?php echo htmlspecialchars($bus_name); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Plate</span><span class="detail-value"><?php echo htmlspecialchars($bus_plaque); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Route</span><span class="detail-value"><?php echo htmlspecialchars($route_name); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Travel date</span><span class="detail-value"><?php echo date('M j, Y', strtotime($travel_date)); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Bus</span><span class="detail-value"><?php echo htmlspecialchars($bus_name ?? ''); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Plate</span><span class="detail-value"><?php echo htmlspecialchars($bus_plaque ?? ''); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Route</span><span class="detail-value"><?php echo htmlspecialchars($route_name ?? ''); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Travel date</span><span class="detail-value"><?php echo !empty($travel_date) ? date('M j, Y', strtotime($travel_date)) : '-'; ?></span></div>
                     </div>
 
                     <div class="price-box mt-3">
@@ -445,18 +628,38 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
                 </div>
             </div>
 
+            <!-- Ticket Statistics -->
+            <div class="glass-card">
+                <div class="section-title"><i class="fas fa-ticket-alt"></i> Ticket Statistics</div>
+                <div class="ticket-stats">
+                    <div class="ticket-stat-box">
+                        <div class="number"><?php echo $total_tickets; ?></div>
+                        <div class="label">Total Tickets</div>
+                    </div>
+                    <div class="ticket-stat-box">
+                        <div class="number text-success"><?php echo $checked_tickets; ?></div>
+                        <div class="label">Checked In</div>
+                    </div>
+                    <div class="ticket-stat-box">
+                        <div class="number text-warning"><?php echo $unchecked_tickets; ?></div>
+                        <div class="label">Pending Check-in</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="glass-card">
                 <div class="section-title"><i class="fas fa-credit-card"></i> Choose payment method</div>
-                <form id="paymentForm">
-                    <input type="hidden" name="firstname" id="firstname" value="<?php echo htmlspecialchars($_POST['firstName']); ?>">
-                    <input type="hidden" name="lastname" id="lastname" value="<?php echo htmlspecialchars($_POST['lastName']); ?>">
-                    <input type="hidden" name="email" id="email" value="<?php echo htmlspecialchars($passenger_email); ?>">
-                    <input type="hidden" name="user_id" id="user_id" value="<?php echo htmlspecialchars($userId); ?>">
-                    <input type="hidden" name="trip_id" id="trip_id" value="<?php echo htmlspecialchars($trip_id); ?>">
-                    <input type="hidden" name="nbr_of_seats" id="nbr_of_seats" value="<?php echo htmlspecialchars($number_of_seats); ?>">
-                    <input type="hidden" name="phoneNumber" id="phoneNumber" value="<?php echo htmlspecialchars($passenger_phone); ?>">
-                    <input type="hidden" name="amount" id="amount" value="<?php echo htmlspecialchars($total_amount); ?>">
-                    <input type="hidden" name="tempBookingRef" id="tempBookingRef" value="<?php echo htmlspecialchars($_SESSION['temp_booking_ref']); ?>">
+                <form id="paymentForm" method="POST">
+                    <input type="hidden" name="firstname" value="<?php echo htmlspecialchars($firstname); ?>">
+                    <input type="hidden" name="lastname" value="<?php echo htmlspecialchars($lastname); ?>">
+                    <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
+                    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($userId); ?>">
+                    <input type="hidden" name="trip_id" value="<?php echo htmlspecialchars($trip_id); ?>">
+                    <input type="hidden" name="number_of_seats" value="<?php echo htmlspecialchars($number_of_seats); ?>">
+                    <input type="hidden" name="contact" value="<?php echo htmlspecialchars($phone); ?>">
+                    <input type="hidden" name="amount" value="<?php echo htmlspecialchars($total_amount); ?>">
+                    <input type="hidden" name="tempBookingRef" value="<?php echo htmlspecialchars($_SESSION['temp_booking_ref'] ?? ''); ?>">
+                    <input type="hidden" name="action" value="create_booking">
 
                     <div class="payment-options">
                         <div class="payment-option" onclick="selectPayment('momo')">
@@ -483,10 +686,10 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
                     <div id="paymentStatus" style="display:none;">
                         <div class="alert alert-info">
                             <div class="d-flex align-items-center">
-                                <div class="spinner-border spinner-border-sm me-3" role="status" id="statusSpinner"></div>
+                                <div class="spinner-border spinner-border-sm me-3" role="status"></div>
                                 <div>
                                     <h6 class="mb-1" id="statusTitle">Processing payment</h6>
-                                    <p class="mb-0 small" id="statusMessage">Initializing payment request...</p>
+                                    <p class="mb-0 small" id="statusMessage">Creating your booking...</p>
                                     <div class="progress mt-2" style="height:4px;">
                                         <div class="progress-bar progress-bar-striped progress-bar-animated" id="statusProgress" style="width:0%"></div>
                                     </div>
@@ -496,7 +699,7 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
                     </div>
 
                     <div class="footer-actions">
-                        <a href="bookingpage.php?bus_plaque=<?php echo $bus_plaque; ?>&route=<?php echo urlencode($route_name); ?>&price=<?php echo $price; ?>&bus_name=<?php echo urlencode($bus_name); ?>" class="btn btn-outline-secondary">
+                        <a href="bookingpage.php?trip_id=<?php echo $trip_id; ?>&price=<?php echo $price; ?>" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i> Back to edit
                         </a>
                         <button type="submit" class="btn btn-primary px-4" id="confirmBtn" disabled>
@@ -509,7 +712,6 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
     </div>
 
     <script>
-        // ======== PAYMENT LOGIC ========
         function selectPayment(method) {
             document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
             document.querySelector(`[onclick="selectPayment('${method}')"]`).classList.add('selected');
@@ -524,7 +726,6 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
             });
         });
 
-        // Main form submit
         document.getElementById('paymentForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -538,141 +739,45 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
                 return;
             }
 
-            // Gather data
-            const payload = {
-                user_id: document.getElementById('user_id').value,
-                trip_id: document.getElementById('trip_id').value,
-                number_of_seats: parseInt(document.getElementById('nbr_of_seats').value),
-                phoneNumber: document.getElementById('phoneNumber').value,
-                amount: parseFloat(document.getElementById('amount').value),
-                payment_method: paymentMethod.value,
-                temp_booking_ref: document.getElementById('tempBookingRef').value,
-                firstname: document.getElementById('firstname').value,
-                lastname: document.getElementById('lastname').value,
-                email: document.getElementById('email').value
-            };
-
-            showPaymentStatus('Initiating Payment', 'Sending request...', 10);
+            const formData = new FormData(document.getElementById('paymentForm'));
+            showPaymentStatus('Processing Payment', 'Creating your booking and ticket...', 30);
 
             try {
-                const response = await fetch('http://localhost:3000/process_payment', {
+                const response = await fetch(window.location.href, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phoneNumber: payload.phoneNumber,
-                        amount: payload.amount
-                    })
+                    body: formData
                 });
 
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.error || 'Payment request failed');
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('Server response:', text);
+                    throw new Error('Server error: ' + response.status);
+                }
 
-                if (!data.referenceId) throw new Error('No reference ID received');
+                const result = await response.json();
 
-                console.log('Payment initiated, referenceId:', data.referenceId);
-                showPaymentStatus('Payment Initiated', 'Please check your phone to approve...', 40);
-
-                // Start polling
-                await pollPaymentStatus(data.referenceId, payload);
+                if (result.success) {
+                    showPaymentStatus('Booking Confirmed!', 'Your ticket has been created. Redirecting...', 100);
+                    setTimeout(() => {
+                        window.location.href = `ticket_download.php?booking_id=${result.booking_id}`;
+                    }, 1500);
+                } else {
+                    throw new Error(result.error || 'Booking creation failed');
+                }
 
             } catch (error) {
-                console.error('Payment error:', error);
-                showError(error.message || 'An error occurred');
+                console.error('Error:', error);
+                showError(error.message || 'An error occurred. Please try again.');
                 confirmBtn.disabled = false;
             }
         });
 
-        // Polling function
-        async function pollPaymentStatus(referenceId, payload) {
-            let attempts = 0;
-            const maxAttempts = 30;
-
-            const check = async () => {
-                attempts++;
-                try {
-                    // Build URL with pending booking data (will be used by PHP on success)
-                    const params = new URLSearchParams({
-                        user_id: payload.user_id,
-                        trip_id: payload.trip_id,
-                        number_of_seats: payload.number_of_seats,
-                        payment_method: payload.payment_method,
-                        amount: payload.amount,
-                        firstname: payload.firstname,
-                        lastname: payload.lastname,
-                        email: payload.email,
-                        contact: payload.phoneNumber,
-                        temp_booking_ref: payload.temp_booking_ref
-                    });
-
-                    const response = await fetch(`http://localhost:3000/payment_status/${referenceId}?${params.toString()}`);
-                    if (!response.ok) throw new Error('Failed to check status');
-
-                    const statusData = await response.json();
-                    console.log('Status check:', statusData);
-
-                    const progress = Math.min(40 + attempts * 2, 90);
-                    showPaymentStatus('Checking Status', `Waiting for confirmation... (${attempts}/${maxAttempts})`, progress);
-
-                    if (statusData.status === 'SUCCESSFUL') {
-                        showPaymentStatus('Payment Successful!', 'Creating booking...', 95);
-                        // Now call your PHP backend to create the booking
-                        await finalizeBooking(payload);
-                        return;
-                    } else if (statusData.status === 'FAILED') {
-                        throw new Error('Payment declined or failed');
-                    } else {
-                        // PENDING or other – continue polling
-                        if (attempts >= maxAttempts) {
-                            throw new Error('Payment timeout. Please try again.');
-                        }
-                        setTimeout(check, 5000);
-                    }
-                } catch (error) {
-                    console.error('Polling error:', error);
-                    showError(error.message || 'Status check failed');
-                    document.getElementById('confirmBtn').disabled = false;
-                }
-            };
-
-            await check();
-        }
-
-        // Finalize booking (call your PHP script)
-        async function finalizeBooking(payload) {
-            try {
-                const response = await fetch('create_booking.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                if (!response.ok) throw new Error(result.error || 'Booking creation failed');
-
-                showPaymentStatus('Booking Confirmed!', 'Your ticket is ready.', 100);
-                // Redirect to ticket page
-                setTimeout(() => {
-                    window.location.href = `ticket_download.php?booking_id=${result.booking_id}`;
-                }, 1500);
-            } catch (error) {
-                console.error('Booking creation error:', error);
-                showError('Payment successful but booking creation failed. Please contact support.');
-                document.getElementById('confirmBtn').disabled = false;
-            }
-        }
-
-        // UI helpers
         function showPaymentStatus(title, message, progress) {
             const statusDiv = document.getElementById('paymentStatus');
             statusDiv.style.display = 'block';
             document.getElementById('statusTitle').textContent = title;
             document.getElementById('statusMessage').textContent = message;
             document.getElementById('statusProgress').style.width = progress + '%';
-            // Adjust alert colour
-            const alert = statusDiv.querySelector('.alert');
-            alert.className = 'alert ';
-            if (progress < 40) alert.className += 'alert-info';
-            else if (progress < 80) alert.className += 'alert-warning';
-            else alert.className += 'alert-success';
         }
 
         function showError(message) {
@@ -680,7 +785,7 @@ $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
             statusDiv.innerHTML = `
                 <div class="alert alert-danger">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-exclamation-triangle me-3"></i>
+                        <i class="fas fa-exclamation-triangle me-3 fa-2x"></i>
                         <div>
                             <h6 class="mb-1">Payment Error</h6>
                             <p class="mb-0 small">${message}</p>

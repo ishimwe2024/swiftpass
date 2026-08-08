@@ -74,32 +74,6 @@ $recent_bookings = $conn->query("
     LIMIT 8
 ");
 
-$recent_payments = $conn->query("
-    SELECT p.payment_id, p.booking_id, p.amount, p.payment_method, p.transaction_id, p.payment_status, p.time_paid,
-           c.firstname, c.lastname, c.contact,
-           r.departure, r.destination
-    FROM payments p
-    LEFT JOIN bookings b ON p.booking_id = b.booking_id
-    LEFT JOIN customers c ON b.customer_id = c.customer_id
-    LEFT JOIN trips t ON b.trip_id = t.trip_id
-    LEFT JOIN routes r ON t.route_id = r.route_id
-    ORDER BY p.time_paid DESC
-    LIMIT 8
-");
-
-$all_payments = $conn->query("
-    SELECT p.payment_id, p.booking_id, p.amount, p.payment_method, p.transaction_id, p.payment_status, p.time_paid,
-           c.firstname, c.lastname, c.contact,
-           r.departure, r.destination
-    FROM payments p
-    LEFT JOIN bookings b ON p.booking_id = b.booking_id
-    LEFT JOIN customers c ON b.customer_id = c.customer_id
-    LEFT JOIN trips t ON b.trip_id = t.trip_id
-    LEFT JOIN routes r ON t.route_id = r.route_id
-    ORDER BY p.time_paid DESC
-    LIMIT 100
-");
-
 $all_customers = $conn->query("SELECT * FROM customers ORDER BY created_at DESC LIMIT 50");
 ?>
 
@@ -198,12 +172,6 @@ $all_customers = $conn->query("SELECT * FROM customers ORDER BY created_at DESC 
           <a href="#" class="nav-link" data-section="manage-customers">
             <i class="fas fa-user-friends"></i>
             <span>Manage Customers</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link" data-section="manage-payments">
-            <i class="fas fa-credit-card"></i>
-            <span>Manage Payments</span>
           </a>
         </li>
         <li class="nav-item">
@@ -394,60 +362,6 @@ $all_customers = $conn->query("SELECT * FROM customers ORDER BY created_at DESC 
                   <td colspan="8" class="text-center py-5 text-muted">
                     <i class="fas fa-inbox fa-3x mb-3"></i>
                     <p>No recent bookings found.</p>
-                  </td>
-                </tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Recent Payments Table -->
-      <div class="table-container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="mb-0"><i class="fas fa-credit-card me-2"></i>Recent Payments</h4>
-          <a href="payments.php" class="btn btn-primary">
-            <i class="fas fa-eye me-2"></i>View All
-          </a>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Payment ID</th>
-                <th>Booking</th>
-                <th>Customer</th>
-                <th>Route</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th>Paid At</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if ($recent_payments->num_rows > 0): ?>
-                <?php while ($payment = $recent_payments->fetch_assoc()): ?>
-                  <tr>
-                    <td><strong>#<?php echo $payment['payment_id']; ?></strong></td>
-                    <td>#BK<?php echo str_pad($payment['booking_id'], 5, '0', STR_PAD_LEFT); ?></td>
-                    <td><?php echo htmlspecialchars(trim(($payment['firstname'] ?? '') . ' ' . ($payment['lastname'] ?? ''))); ?></td>
-                    <td><?php echo htmlspecialchars(($payment['departure'] ?? '') . ' → ' . ($payment['destination'] ?? '')); ?></td>
-                    <td><strong><?php echo number_format($payment['amount'], 2); ?> FRW</strong></td>
-                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $payment['payment_method'] ?? ''))); ?></td>
-                    <td>
-                      <span class="badge bg-success">
-                        <i class="fas fa-check-circle me-1"></i><?php echo ucfirst($payment['payment_status'] ?? 'completed'); ?>
-                      </span>
-                    </td>
-                    <td><?php echo !empty($payment['time_paid']) ? date('M j, Y H:i', strtotime($payment['time_paid'])) : 'N/A'; ?></td>
-                  </tr>
-                <?php endwhile; ?>
-              <?php else: ?>
-                <tr>
-                  <td colspan="8" class="text-center py-5 text-muted">
-                    <i class="fas fa-credit-card fa-3x mb-3"></i>
-                    <p>No recent payments found.</p>
                   </td>
                 </tr>
               <?php endif; ?>
@@ -905,62 +819,6 @@ $all_customers = $conn->query("SELECT * FROM customers ORDER BY created_at DESC 
       </div>
     </div>
 
-    <!-- Manage Payments Section -->
-    <div id="manage-payments" class="dashboard-section hidden">
-      <div class="table-container">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h4 class="mb-0"><i class="fas fa-credit-card me-2"></i>Payment Management</h4>
-          <a href="payments.php" class="btn btn-primary">
-            <i class="fas fa-eye me-2"></i>Open Payments Page
-          </a>
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>Payment ID</th>
-                <th>Booking</th>
-                <th>Customer</th>
-                <th>Route</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Status</th>
-                <th>Paid At</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php if ($all_payments && $all_payments->num_rows > 0): ?>
-                <?php while ($payment = $all_payments->fetch_assoc()): ?>
-                  <tr>
-                    <td><strong>#<?php echo $payment['payment_id']; ?></strong></td>
-                    <td>#BK<?php echo str_pad($payment['booking_id'], 5, '0', STR_PAD_LEFT); ?></td>
-                    <td><?php echo htmlspecialchars(trim(($payment['firstname'] ?? '') . ' ' . ($payment['lastname'] ?? ''))); ?></td>
-                    <td><?php echo htmlspecialchars(($payment['departure'] ?? '') . ' → ' . ($payment['destination'] ?? '')); ?></td>
-                    <td><strong><?php echo number_format($payment['amount'], 2); ?> FRW</strong></td>
-                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $payment['payment_method'] ?? ''))); ?></td>
-                    <td>
-                      <span class="badge bg-success">
-                        <i class="fas fa-check-circle me-1"></i><?php echo ucfirst($payment['payment_status'] ?? 'completed'); ?>
-                      </span>
-                    </td>
-                    <td><?php echo !empty($payment['time_paid']) ? date('M j, Y H:i', strtotime($payment['time_paid'])) : 'N/A'; ?></td>
-                  </tr>
-                <?php endwhile; ?>
-              <?php else: ?>
-                <tr>
-                  <td colspan="8" class="text-center py-5 text-muted">
-                    <i class="fas fa-credit-card fa-3x mb-3"></i>
-                    <p>No payments found in the system.</p>
-                  </td>
-                </tr>
-              <?php endif; ?>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
     <!-- Manage Users Section -->
     <div id="manage-users" class="dashboard-section hidden">
       <div class="table-container">
@@ -1043,10 +901,6 @@ $all_customers = $conn->query("SELECT * FROM customers ORDER BY created_at DESC 
         'manage-customers': {
           title: 'Customer Management 👥',
           subtitle: 'Manage customer information and history'
-        },
-        'manage-payments': {
-          title: 'Payment Management 💳',
-          subtitle: 'View and track all payment records'
         },
         'manage-users': {
           title: 'User Management 🔐',

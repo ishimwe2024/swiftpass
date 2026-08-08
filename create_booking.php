@@ -38,8 +38,15 @@ $userId = $_SESSION['user_id'];  // from `users` table
 $trip_id = $input['trip_id'] ?? $pending['trip_id'];
 $number_of_seats = $input['number_of_seats'] ?? $pending['number_of_seats'];
 $total_amount = $input['amount'] ?? $pending['total_amount'];
-$payment_method = $input['payment_method'] ?? 'momo';
-$temp_ref = $input['temp_booking_ref'] ?? 'TEMP_' . time();
+$payment_method = strtolower($input['payment_method'] ?? 'momo');
+if ($payment_method === 'airtel') {
+    $payment_method = 'airtel_money';
+} elseif ($payment_method !== 'momo' && $payment_method !== 'airtel_money') {
+    $payment_method = 'momo';
+}
+$payment_status = $input['payment_status'] ?? 'completed';
+$transaction_id = $input['transaction_id'] ?? $input['temp_booking_ref'] ?? 'TEMP_' . time();
+$temp_ref = $transaction_id;
 
 $passenger_name = $pending['passenger_name'];      // "First Last"
 $passenger_phone = $pending['passenger_phone'];
@@ -83,16 +90,27 @@ try {
     $booking_id = $conn->insert_id;
     $stmt->close();
 
-    // 3. Insert payment (use the MoMo reference if available, else temp_ref)
-    // We'll use temp_ref as transaction_id (you can later update with the actual MoMo reference)
-    $payment_query = "INSERT INTO payments (booking_id, amount, payment_method, transaction_id, payment_status, time_paid) 
-                      VALUES (?, ?, ?, ?, 'completed', NOW())";
-    $stmt = $conn->prepare($payment_query);
-    $stmt->bind_param("idss", $booking_id, $total_amount, $payment_method, $temp_ref);
-    if (!$stmt->execute()) {
-        throw new Exception('Payment insert failed: ' . $stmt->error);
+    // 3. Generate payment record for the created booking
+    $check_payment = $conn->prepare("SELECT payment_id FROM payments WHERE booking_id = ?");
+    $check_payment->bind_param("i", $booking_id);
+    $check_payment->execute();
+    $payment_result = $check_payment->get_result();
+    $payment_id = null;
+
+    if ($payment_result->num_rows > 0) {
+        $payment_id = $payment_result->fetch_assoc()['payment_id'];
+    } else {
+        $payment_query = "INSERT INTO payments (booking_id, amount, payment_method, transaction_id, payment_status, time_paid) 
+                          VALUES (?, ?, ?, ?, ?, NOW())";
+        $stmt = $conn->prepare($payment_query);
+        $stmt->bind_param("idsss", $booking_id, $total_amount, $payment_method, $temp_ref, $payment_status);
+        if (!$stmt->execute()) {
+            throw new Exception('Payment insert failed: ' . $stmt->error);
+        }
+        $payment_id = $conn->insert_id;
+        $stmt->close();
     }
-    $stmt->close();
+    $check_payment->close();
 
     // 4. Update available seats in trips
     $update_seats = "UPDATE trips SET available_seats = available_seats - ? WHERE trip_id = ?";
@@ -109,7 +127,7 @@ try {
     unset($_SESSION['pending_booking']);
     unset($_SESSION['temp_booking_ref']);
 
-    echo json_encode(['success' => true, 'booking_id' => $booking_id]);
+    echo json_encode(['success' => true, 'booking_id' => $booking_id, 'payment_id' => $payment_id]);
 
 } catch (Exception $e) {
     $conn->rollback();
