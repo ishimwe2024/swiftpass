@@ -2,7 +2,7 @@
 $servername = "localhost";   // usually localhost
 $username   = "root";        // default in XAMPP
 $password   = "";            // default in XAMPP is empty
-$dbname     = "swiftpass"; // change to your DB name
+$dbname     = "urugendo1"; // change to your DB name
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);
