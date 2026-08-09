@@ -5,10 +5,35 @@ include('connection.php');
 // Get ticket ID from URL
 $ticket_id = isset($_GET['ticket_id']) ? $_GET['ticket_id'] : '';
 $booking_id = isset($_GET['booking_id']) ? $_GET['booking_id'] : '';
+$verified_flag = isset($_GET['verified']) ? (int)$_GET['verified'] : 0;
 
 // If no ticket ID or booking ID, redirect to home
 if (empty($ticket_id) && empty($booking_id)) {
     header("Location: homepage.php");
+    exit;
+}
+
+// Handle AJAX status check
+if (isset($_GET['check_status']) && $_GET['check_status'] == 1) {
+    header('Content-Type: application/json');
+    $id = !empty($ticket_id) ? $ticket_id : $booking_id;
+    $type = !empty($ticket_id) ? 'ticket' : 'booking';
+    
+    if ($type === 'ticket') {
+        $stmt = $conn->prepare("SELECT checked, checked_at FROM tickets WHERE ticket_id = ?");
+        $stmt->bind_param("s", $id);
+    } else {
+        $stmt = $conn->prepare("SELECT t.checked, t.checked_at FROM tickets t JOIN bookings b ON t.booking_id = b.booking_id WHERE b.booking_id = ?");
+        $stmt->bind_param("i", $id);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+    if ($row = $result->fetch_assoc()) {
+        echo json_encode(['checked' => $row['checked'], 'checked_at' => $row['checked_at']]);
+    } else {
+        echo json_encode(['error' => 'Not found']);
+    }
+    $stmt->close();
     exit;
 }
 
@@ -183,7 +208,6 @@ if (empty($ticket_details) && empty($booking_details)) {
             width: 100%;
         }
 
-        /* Main Ticket Container */
         .bus-ticket {
             background: #ffffff;
             border-radius: 16px;
@@ -192,7 +216,6 @@ if (empty($ticket_details) && empty($booking_details)) {
             position: relative;
         }
 
-        /* Ticket Header - Company Branding */
         .ticket-header {
             background: linear-gradient(135deg, #1a237e, #0d47a1);
             padding: 20px 30px;
@@ -246,14 +269,13 @@ if (empty($ticket_details) && empty($booking_details)) {
             font-size: 0.85rem;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            transition: background 0.3s ease;
         }
 
-        /* Ticket Body */
         .ticket-body {
             padding: 25px 30px;
         }
 
-        /* Route Information - Big Display */
         .route-display {
             background: linear-gradient(135deg, #f5f7fa, #e8ecf1);
             border-radius: 12px;
@@ -289,7 +311,6 @@ if (empty($ticket_details) && empty($booking_details)) {
             padding: 0 15px;
         }
 
-        /* Ticket Grid */
         .ticket-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -317,13 +338,6 @@ if (empty($ticket_details) && empty($booking_details)) {
             margin-top: 2px;
         }
 
-        .ticket-field .value-lg {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #0d47a1;
-        }
-
-        /* Price Section */
         .price-section {
             background: linear-gradient(135deg, #1a237e, #0d47a1);
             border-radius: 12px;
@@ -351,7 +365,6 @@ if (empty($ticket_details) && empty($booking_details)) {
             opacity: 0.8;
         }
 
-        /* Bottom Section - QR & Details */
         .ticket-bottom {
             display: grid;
             grid-template-columns: 1fr 2fr;
@@ -412,7 +425,6 @@ if (empty($ticket_details) && empty($booking_details)) {
             color: #1a237e;
         }
 
-        /* Footer */
         .ticket-footer {
             background: #f5f7fa;
             padding: 12px 30px;
@@ -430,7 +442,6 @@ if (empty($ticket_details) && empty($booking_details)) {
             margin: 0 5px;
         }
 
-        /* Action Buttons */
         .action-buttons {
             display: flex;
             gap: 10px;
@@ -456,144 +467,54 @@ if (empty($ticket_details) && empty($booking_details)) {
             background: linear-gradient(135deg, #0d47a1, #1a237e);
             color: #fff;
         }
-
         .btn-download:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(13, 71, 161, 0.3);
             color: #fff;
         }
-
         .btn-print {
             background: #2e7d32;
             color: #fff;
         }
-
         .btn-print:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(46, 125, 50, 0.3);
             color: #fff;
         }
-
         .btn-home {
             background: #6c757d;
             color: #fff;
         }
-
         .btn-home:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
             color: #fff;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            .ticket-body {
-                padding: 15px 18px;
-            }
-
-            .ticket-header {
-                padding: 15px 18px;
-                flex-direction: column;
-                text-align: center;
-                gap: 10px;
-            }
-
-            .company-info {
-                flex-direction: column;
-            }
-
-            .route-display {
-                flex-direction: column;
-                gap: 10px;
-                padding: 15px;
-            }
-
-            .route-city .city-name {
-                font-size: 1.4rem;
-            }
-
-            .route-arrow {
-                transform: rotate(90deg);
-                padding: 5px 0;
-            }
-
-            .ticket-grid {
-                grid-template-columns: 1fr;
-                gap: 5px;
-            }
-
-            .ticket-bottom {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .ticket-meta {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .price-section {
-                flex-direction: column;
-                text-align: center;
-                gap: 5px;
-            }
-
-            .price-section .price-amount {
-                font-size: 1.5rem;
-            }
-
-            .action-buttons {
-                flex-direction: column;
-            }
-
-            .btn-action {
-                width: 100%;
-                justify-content: center;
-            }
+            .ticket-body { padding: 15px 18px; }
+            .ticket-header { padding: 15px 18px; flex-direction: column; text-align: center; gap: 10px; }
+            .company-info { flex-direction: column; }
+            .route-display { flex-direction: column; gap: 10px; padding: 15px; }
+            .route-city .city-name { font-size: 1.4rem; }
+            .route-arrow { transform: rotate(90deg); padding: 5px 0; }
+            .ticket-grid { grid-template-columns: 1fr; gap: 5px; }
+            .ticket-bottom { grid-template-columns: 1fr; gap: 15px; }
+            .ticket-meta { grid-template-columns: 1fr 1fr; }
+            .price-section { flex-direction: column; text-align: center; gap: 5px; }
+            .price-section .price-amount { font-size: 1.5rem; }
+            .action-buttons { flex-direction: column; }
+            .btn-action { width: 100%; justify-content: center; }
         }
 
         @media print {
-            body {
-                background: #fff !important;
-                padding: 0 !important;
-            }
-
-            .ticket-wrapper {
-                max-width: 100% !important;
-            }
-
-            .bus-ticket {
-                box-shadow: none !important;
-                border-radius: 0 !important;
-            }
-
-            .action-buttons {
-                display: none !important;
-            }
-
-            .no-print {
-                display: none !important;
-            }
+            body { background: #fff !important; padding: 0 !important; }
+            .ticket-wrapper { max-width: 100% !important; }
+            .bus-ticket { box-shadow: none !important; border-radius: 0 !important; }
+            .action-buttons { display: none !important; }
+            .no-print { display: none !important; }
         }
 
-        /* Staple effect (decorative) */
-        .ticket-staple {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: #c62828;
-            border-radius: 50%;
-            opacity: 0.3;
-            top: 50%;
-            left: -5px;
-            transform: translateY(-50%);
-        }
-
-        .ticket-staple.right {
-            left: auto;
-            right: -5px;
-        }
-
-        /* Used ticket overlay */
         .ticket-used {
             position: absolute;
             top: 50%;
@@ -613,7 +534,6 @@ if (empty($ticket_details) && empty($booking_details)) {
             z-index: 10;
             display: <?php echo ($ticket_details['checked'] ?? 'no') === 'yes' ? 'block' : 'none'; ?>;
         }
-
         .ticket-used small {
             font-size: 0.8rem;
             font-weight: 400;
@@ -621,16 +541,34 @@ if (empty($ticket_details) && empty($booking_details)) {
             letter-spacing: 1px;
             opacity: 0.8;
         }
+
+        .verified-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2e7d32;
+            color: #fff;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 999;
+            display: none;
+            font-weight: 600;
+        }
     </style>
 </head>
 
 <body>
     <div class="ticket-wrapper">
+        <div id="verifiedToast" class="verified-toast">
+            <i class="fas fa-check-circle me-2"></i> Ticket Verified!
+        </div>
+
         <div class="bus-ticket">
             <!-- USED Stamp -->
-            <div class="ticket-used">
+            <div class="ticket-used" id="usedStamp">
                 USED
-                <small><?php echo ($ticket_details['checked'] ?? 'no') === 'yes' && !empty($ticket_details['checked_at']) ? date('M j, Y', strtotime($ticket_details['checked_at'])) : ''; ?></small>
+                <small id="usedStampTime"><?php echo ($ticket_details['checked'] ?? 'no') === 'yes' && !empty($ticket_details['checked_at']) ? date('M j, Y', strtotime($ticket_details['checked_at'])) : ''; ?></small>
             </div>
 
             <!-- Ticket Header -->
@@ -644,7 +582,7 @@ if (empty($ticket_details) && empty($booking_details)) {
                         <small>Premium Bus Services</small>
                     </div>
                 </div>
-                <div class="ticket-status">
+                <div class="ticket-status" id="statusBadge">
                     <i class="fas fa-<?php echo ($ticket_details['checked'] ?? 'no') === 'yes' ? 'check-circle' : 'circle'; ?> me-1"></i>
                     <?php echo ($ticket_details['checked'] ?? 'no') === 'yes' ? 'USED' : 'ACTIVE'; ?>
                 </div>
@@ -738,18 +676,26 @@ if (empty($ticket_details) && empty($booking_details)) {
                             <div class="meta-label">Booking Date</div>
                             <div class="meta-value"><?php echo date('M j, Y', strtotime($booking_details['booking_date'])); ?></div>
                         </div>
-                        <div class="meta-item">
+                        <div class="meta-item" id="statusMeta">
                             <div class="meta-label">Ticket Status</div>
                             <div class="meta-value" style="color: <?php echo ($ticket_details['checked'] ?? 'no') === 'yes' ? '#e65100' : '#2e7d32'; ?>;">
                                 <?php echo ($ticket_details['checked'] ?? 'no') === 'yes' ? 'Used' : 'Active'; ?>
                             </div>
                         </div>
                         <?php if (($ticket_details['checked'] ?? 'no') === 'yes' && !empty($ticket_details['checked_at'])): ?>
-                        <div class="meta-item" style="grid-column: span 2;">
+                        <div class="meta-item" style="grid-column: span 2;" id="verifiedTimeMeta">
                             <div class="meta-label">Verified / Checked In</div>
                             <div class="meta-value" style="color:#e65100;">
                                 <i class="fas fa-check-circle me-1"></i>
                                 <?php echo date('M j, Y g:i A', strtotime($ticket_details['checked_at'])); ?>
+                            </div>
+                        </div>
+                        <?php else: ?>
+                        <div class="meta-item" style="grid-column: span 2; display: none;" id="verifiedTimeMeta">
+                            <div class="meta-label">Verified / Checked In</div>
+                            <div class="meta-value" style="color:#e65100;">
+                                <i class="fas fa-check-circle me-1"></i>
+                                <span id="verifiedTimeValue"></span>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -785,7 +731,7 @@ if (empty($ticket_details) && empty($booking_details)) {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
-        // Generate QR code
+        // ========== QR Code Generation (NEW format) ==========
         function generateQRCode() {
             const qr = qrcode(0, 'M');
 
@@ -793,22 +739,21 @@ if (empty($ticket_details) && empty($booking_details)) {
             const booking_id = '<?php echo $booking_details['booking_id']; ?>';
             const security_hash = '<?php echo md5(($ticket_details['ticket_id'] ?? '') . $booking_details['booking_id'] . 'swiftpass_secret'); ?>';
 
-            // Create verification URL
-            const verificationUrl = `<?php echo "https://junkyard-hardship-refill.ngrok-free.dev/urugendo/"; ?>verify-ticket.php?ticket_id=${ticket_id}&booking_id=${booking_id}&hash=${security_hash}`;
+            // NEW: Custom data string – NOT a URL
+            const verificationData = `SWIFTPASS|${ticket_id}|${booking_id}|${security_hash}`;
 
-            qr.addData(verificationUrl);
+            qr.addData(verificationData);
             qr.make();
 
             const qrContainer = document.getElementById('qrCodeContainer');
             qrContainer.innerHTML = qr.createImgTag(4);
         }
 
-        // Print function
+        // ========== Print & Download ==========
         function printTicket() {
             window.print();
         }
 
-        // Download as image function
         function downloadTicket() {
             const ticketElement = document.querySelector('.bus-ticket');
             const downloadBtn = document.querySelector('.btn-download');
@@ -841,7 +786,86 @@ if (empty($ticket_details) && empty($booking_details)) {
             });
         }
 
-        // Initialize
+        // ========== Polling & Real‑time Status Update ==========
+        let currentStatus = '<?php echo $ticket_details['checked'] ?? 'no'; ?>';
+        const ticketId = '<?php echo $ticket_details['ticket_id'] ?? ''; ?>';
+        const bookingId = '<?php echo $booking_details['booking_id']; ?>';
+        const verifiedFlag = <?php echo $verified_flag; ?>;
+
+        function updateUI(checked, checkedAt) {
+            const statusBadge = document.getElementById('statusBadge');
+            const usedStamp = document.getElementById('usedStamp');
+            const usedStampTime = document.getElementById('usedStampTime');
+            const statusMeta = document.getElementById('statusMeta');
+            const verifiedTimeMeta = document.getElementById('verifiedTimeMeta');
+            const verifiedTimeValue = document.getElementById('verifiedTimeValue');
+
+            if (checked === 'yes') {
+                // Update badge
+                statusBadge.className = 'ticket-status';
+                statusBadge.style.background = '#e65100';
+                statusBadge.innerHTML = '<i class="fas fa-check-circle me-1"></i> USED';
+
+                // Show used stamp
+                usedStamp.style.display = 'block';
+                if (checkedAt) {
+                    const date = new Date(checkedAt);
+                    usedStampTime.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                }
+
+                // Update meta
+                statusMeta.querySelector('.meta-value').textContent = 'Used';
+                statusMeta.querySelector('.meta-value').style.color = '#e65100';
+
+                // Show verified time
+                verifiedTimeMeta.style.display = 'block';
+                if (checkedAt) {
+                    const date = new Date(checkedAt);
+                    verifiedTimeValue.textContent = date.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+                }
+
+                // If the flag is set, show a toast
+                if (verifiedFlag) {
+                    document.getElementById('verifiedToast').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('verifiedToast').style.display = 'none';
+                    }, 5000);
+                }
+
+                // Stop polling once used
+                clearInterval(pollInterval);
+            }
+        }
+
+        // Check status via AJAX
+        async function checkStatus() {
+            try {
+                const url = window.location.pathname + `?check_status=1&ticket_id=${ticketId}&booking_id=${bookingId}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.checked && data.checked !== currentStatus) {
+                    currentStatus = data.checked;
+                    updateUI(data.checked, data.checked_at);
+                }
+            } catch (error) {
+                console.warn('Status check failed:', error);
+            }
+        }
+
+        // Start polling if the ticket is not yet used
+        let pollInterval;
+        if (currentStatus !== 'yes') {
+            pollInterval = setInterval(checkStatus, 5000);
+            checkStatus();
+        } else {
+            updateUI('yes', '<?php echo $ticket_details['checked_at'] ?? ''; ?>');
+        }
+
+        if (verifiedFlag && currentStatus !== 'yes') {
+            setTimeout(() => { checkStatus(); }, 1000);
+        }
+
+        // ========== Initialise QR ==========
         document.addEventListener('DOMContentLoaded', function() {
             generateQRCode();
         });

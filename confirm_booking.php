@@ -28,12 +28,12 @@ if ($user_stmt) {
     $user_stmt->close();
 }
 
-// Get POST values
-$number_of_seats = isset($_POST['seatCount']) ? (int)$_POST['seatCount'] : 1;
+// Get POST values from booking form
+$number_of_seats = isset($_POST['seatCount']) ? (int) $_POST['seatCount'] : 1;
 $bus_plaque = $_POST['plate_nbr'] ?? '';
 $bus_name = $_POST['bus_name'] ?? '';
 $route_name = $_POST['route_name'] ?? '';
-$price = isset($_POST['price']) ? (float)$_POST['price'] : 0;
+$price = isset($_POST['price']) ? (float) $_POST['price'] : 0;
 $travel_date = $_POST['travel_date'] ?? '';
 $total_amount = $price * max(1, $number_of_seats);
 $trip_id = $_POST['trip_id'] ?? null;
@@ -48,18 +48,18 @@ $lastname = !empty($posted_lastname) ? $posted_lastname : ($user_row['lastname']
 $email = !empty($posted_email) ? $posted_email : ($user_row['email'] ?? '');
 $phone = !empty($posted_phone) ? $posted_phone : ($user_row['contact'] ?? '');
 
-// ===== HANDLE BOOKING CREATION =====
+// ===== HANDLE BOOKING CREATION (AJAX) =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_booking') {
     error_reporting(0);
     ini_set('display_errors', 0);
     header('Content-Type: application/json');
 
     try {
-        $user_id = (int)$_POST['user_id'];
-        $trip_id = (int)$_POST['trip_id'];
-        $number_of_seats = (int)$_POST['number_of_seats'];
+        $user_id = (int) $_POST['user_id'];
+        $trip_id = (int) $_POST['trip_id'];
+        $number_of_seats = (int) $_POST['number_of_seats'];
         $payment_method = $conn->real_escape_string($_POST['payment_method']);
-        $amount = (float)$_POST['amount'];
+        $amount = (float) $_POST['amount'];
         $firstname = $conn->real_escape_string($_POST['firstname']);
         $lastname = $conn->real_escape_string($_POST['lastname']);
         $email = $conn->real_escape_string($_POST['email']);
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $booking_id = $conn->insert_id;
         $insert_booking->close();
 
-        // 3. Create payment record
+        // 3. Create payment record (status = 'completed' because MoMo already succeeded)
         $payment_status = 'completed';
         $transaction_id = 'TXN_' . time() . '_' . rand(10000, 99999);
         $time_paid = date('Y-m-d H:i:s');
@@ -135,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         }
         $insert_payment->close();
 
-        // 4. Create ticket record - SET checked = 'no' (THIS IS CORRECT)
+        // 4. Create ticket record
         $checked = 'no';
         $insert_ticket = $conn->prepare(
             "INSERT INTO tickets (booking_id, checked, checked_at, created_at) 
@@ -185,9 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-// Handle regular form submission (not AJAX)
+// ===== HANDLE REGULAR FORM SUBMISSION (first step) =====
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
-    // Store in session and redirect to confirm page
+    // Store in session and redirect to confirm page (already here)
     $_SESSION['pending_booking'] = [
         'customer_id' => $userId,
         'trip_id' => $trip_id,
@@ -208,12 +208,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['action'])) {
     ];
     $_SESSION['temp_booking_ref'] = 'TEMP_' . time() . '_' . rand(1000, 9999);
 
-    // Redirect to confirm page
+    // Redirect to confirm page (itself) to avoid resubmission
     header("Location: confirm_booking.php");
     exit;
 }
 
-// Get ticket stats
+// ===== GET TICKET STATS =====
 $total_tickets = 0;
 $checked_tickets = 0;
 $unchecked_tickets = 0;
@@ -233,9 +233,9 @@ if ($unchecked_result) {
     $unchecked_tickets = $unchecked_result->fetch_assoc()['total'];
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -253,9 +253,13 @@ if ($unchecked_result) {
             --muted: #64748b;
             --border: rgba(148, 163, 184, 0.24);
             --shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+            --mtn-yellow: #FFCC00;
+            --airtel-red: #E00000;
         }
 
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
@@ -300,8 +304,17 @@ if ($unchecked_result) {
             box-shadow: 0 10px 20px rgba(59, 130, 246, 0.25);
         }
 
-        .brand h4 { margin: 0; font-weight: 700; color: var(--primary-dark); }
-        .brand p { margin: 2px 0 0; font-size: 0.86rem; color: var(--muted); }
+        .brand h4 {
+            margin: 0;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .brand p {
+            margin: 2px 0 0;
+            font-size: 0.86rem;
+            color: var(--muted);
+        }
 
         .sidebar .nav-link {
             display: flex;
@@ -361,7 +374,10 @@ if ($unchecked_result) {
             font-weight: 800;
         }
 
-        .topbar p { margin: 0; color: var(--muted); }
+        .topbar p {
+            margin: 0;
+            color: var(--muted);
+        }
 
         .user-chip {
             display: flex;
@@ -408,9 +424,16 @@ if ($unchecked_result) {
             font-weight: 800;
         }
 
-        .section-title i { color: var(--primary); font-size: 1.05rem; }
+        .section-title i {
+            color: var(--primary);
+            font-size: 1.05rem;
+        }
 
-        .detail-list { display: grid; gap: 10px; }
+        .detail-list {
+            display: grid;
+            gap: 10px;
+        }
+
         .detail-row {
             display: flex;
             justify-content: space-between;
@@ -419,9 +442,21 @@ if ($unchecked_result) {
             padding: 10px 0;
             border-bottom: 1px solid #e2e8f0;
         }
-        .detail-row:last-child { border-bottom: 0; }
-        .detail-label { color: var(--muted); font-weight: 600; }
-        .detail-value { font-weight: 700; color: var(--text); text-align: right; }
+
+        .detail-row:last-child {
+            border-bottom: 0;
+        }
+
+        .detail-label {
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .detail-value {
+            font-weight: 700;
+            color: var(--text);
+            text-align: right;
+        }
 
         .price-box {
             padding: 16px;
@@ -455,43 +490,104 @@ if ($unchecked_result) {
         }
 
         .payment-option {
-            border: 1px solid #e2e8f0;
+            border: 2px solid #e2e8f0;
             border-radius: 16px;
             padding: 18px;
             cursor: pointer;
             transition: all 0.25s ease;
             background: #fff;
+            position: relative;
         }
 
         .payment-option:hover {
             transform: translateY(-2px);
             box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-            border-color: #93c5fd;
         }
 
         .payment-option.selected {
-            border-color: var(--primary);
-            background: linear-gradient(135deg, #eff6ff, #f8fafc);
-            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.12);
+            border-color: var(--mtn-yellow);
+            background: #fffde7;
+            box-shadow: 0 12px 24px rgba(255, 204, 0, 0.15);
+        }
+
+        .payment-option.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            filter: grayscale(0.4);
+        }
+
+        .payment-option.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .payment-option .coming-soon {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #dc3545;
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
         }
 
         .payment-icon {
-            width: 46px;
-            height: 46px;
+            width: 60px;
+            height: 60px;
             border-radius: 14px;
-            display: grid;
-            place-items: center;
-            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             margin-bottom: 10px;
+            background: #f1f5f9;
+            color: #1e293b;
+            padding: 6px;
         }
 
-        .payment-icon.momo { background: #fee2e2; color: #dc2626; }
-        .payment-icon.airtel { background: #fef3c7; color: #d97706; }
+        .payment-icon.mtn {
+            background: var(--mtn-yellow);
+        }
 
-        .payment-option h6 { margin: 0 0 4px; font-weight: 800; color: var(--primary-dark); }
-        .payment-option p { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
-        .form-check { margin: 0; }
-        .form-check-input { cursor: pointer; }
+        .payment-icon.mtn img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .payment-icon.airtel img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .payment-icon.airtel {
+            background: var(--airtel-red);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        .payment-option h6 {
+            margin: 0 0 4px;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        .payment-option p {
+            margin: 0 0 12px;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .form-check {
+            margin: 0;
+        }
+
+        .form-check-input {
+            cursor: pointer;
+        }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), #2563eb);
@@ -518,8 +614,14 @@ if ($unchecked_result) {
             border-top: 1px solid #e2e8f0;
         }
 
-        #paymentStatus { margin-top: 14px; }
-        .alert { border-radius: 16px; border: 0; }
+        #paymentStatus {
+            margin-top: 14px;
+        }
+
+        .alert {
+            border-radius: 16px;
+            border: 0;
+        }
 
         .ticket-stats {
             display: grid;
@@ -549,18 +651,47 @@ if ($unchecked_result) {
         }
 
         @media (max-width: 992px) {
-            .grid-2 { grid-template-columns: 1fr; }
-            .payment-options { grid-template-columns: 1fr; }
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .payment-options {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 768px) {
-            .page-shell { flex-direction: column; }
-            .sidebar { width: 100%; border-right: 0; border-bottom: 1px solid var(--border); }
-            .main-content { padding: 18px; }
-            .topbar { flex-direction: column; align-items: flex-start; }
-            .footer-actions { flex-direction: column; align-items: stretch; }
-            .footer-actions .btn { width: 100%; }
-            .ticket-stats { grid-template-columns: 1fr; }
+            .page-shell {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .main-content {
+                padding: 18px;
+            }
+
+            .topbar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .footer-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .footer-actions .btn {
+                width: 100%;
+            }
+
+            .ticket-stats {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -591,7 +722,8 @@ if ($unchecked_result) {
                 <div class="user-chip">
                     <div class="avatar"><?php echo strtoupper(substr($_SESSION['username'] ?? 'U', 0, 1)); ?></div>
                     <div>
-                        <div class="fw-bold text-dark">Welcome, <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></div>
+                        <div class="fw-bold text-dark">Welcome,
+                            <?php echo htmlspecialchars($_SESSION['username'] ?? 'User'); ?></div>
                         <small class="text-muted">Passenger</small>
                     </div>
                 </div>
@@ -601,20 +733,31 @@ if ($unchecked_result) {
                 <div class="glass-card">
                     <div class="section-title"><i class="fas fa-user"></i> Passenger details</div>
                     <div class="detail-list">
-                        <div class="detail-row"><span class="detail-label">Full name</span><span class="detail-value"><?php echo htmlspecialchars($firstname . ' ' . $lastname); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value"><?php echo htmlspecialchars($phone); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value"><?php echo htmlspecialchars($email); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Seats</span><span class="detail-value"><?php echo htmlspecialchars($number_of_seats); ?> seat(s)</span></div>
+                        <div class="detail-row"><span class="detail-label">Full name</span><span
+                                class="detail-value"><?php echo htmlspecialchars($firstname . ' ' . $lastname); ?></span>
+                        </div>
+                        <div class="detail-row"><span class="detail-label">Phone</span><span
+                                class="detail-value"><?php echo htmlspecialchars($phone); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Email</span><span
+                                class="detail-value"><?php echo htmlspecialchars($email); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Seats</span><span
+                                class="detail-value"><?php echo htmlspecialchars($number_of_seats); ?> seat(s)</span>
+                        </div>
                     </div>
                 </div>
 
                 <div class="glass-card">
                     <div class="section-title"><i class="fas fa-route"></i> Trip summary</div>
                     <div class="detail-list">
-                        <div class="detail-row"><span class="detail-label">Bus</span><span class="detail-value"><?php echo htmlspecialchars($bus_name ?? ''); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Plate</span><span class="detail-value"><?php echo htmlspecialchars($bus_plaque ?? ''); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Route</span><span class="detail-value"><?php echo htmlspecialchars($route_name ?? ''); ?></span></div>
-                        <div class="detail-row"><span class="detail-label">Travel date</span><span class="detail-value"><?php echo !empty($travel_date) ? date('M j, Y', strtotime($travel_date)) : '-'; ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Bus</span><span
+                                class="detail-value"><?php echo htmlspecialchars($bus_name ?? ''); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Plate</span><span
+                                class="detail-value"><?php echo htmlspecialchars($bus_plaque ?? ''); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Route</span><span
+                                class="detail-value"><?php echo htmlspecialchars($route_name ?? ''); ?></span></div>
+                        <div class="detail-row"><span class="detail-label">Travel date</span><span
+                                class="detail-value"><?php echo !empty($travel_date) ? date('M j, Y', strtotime($travel_date)) : '-'; ?></span>
+                        </div>
                     </div>
 
                     <div class="price-box mt-3">
@@ -647,42 +790,58 @@ if ($unchecked_result) {
                 </div>
             </div>
 
+            <!-- Payment Form -->
             <div class="glass-card">
                 <div class="section-title"><i class="fas fa-credit-card"></i> Choose payment method</div>
-                <form id="paymentForm" method="POST">
-                    <input type="hidden" name="firstname" value="<?php echo htmlspecialchars($firstname); ?>">
-                    <input type="hidden" name="lastname" value="<?php echo htmlspecialchars($lastname); ?>">
-                    <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
-                    <input type="hidden" name="user_id" value="<?php echo htmlspecialchars($userId); ?>">
-                    <input type="hidden" name="trip_id" value="<?php echo htmlspecialchars($trip_id); ?>">
-                    <input type="hidden" name="number_of_seats" value="<?php echo htmlspecialchars($number_of_seats); ?>">
-                    <input type="hidden" name="contact" value="<?php echo htmlspecialchars($phone); ?>">
-                    <input type="hidden" name="amount" value="<?php echo htmlspecialchars($total_amount); ?>">
-                    <input type="hidden" name="tempBookingRef" value="<?php echo htmlspecialchars($_SESSION['temp_booking_ref'] ?? ''); ?>">
-                    <input type="hidden" name="action" value="create_booking">
+                <form id="paymentForm">
+                    <!-- Hidden fields for booking data -->
+                    <input type="hidden" name="firstname" id="firstname"
+                        value="<?php echo htmlspecialchars($firstname); ?>">
+                    <input type="hidden" name="lastname" id="lastname"
+                        value="<?php echo htmlspecialchars($lastname); ?>">
+                    <input type="hidden" name="email" id="email" value="<?php echo htmlspecialchars($email); ?>">
+                    <input type="hidden" name="user_id" id="user_id" value="<?php echo htmlspecialchars($userId); ?>">
+                    <input type="hidden" name="trip_id" id="trip_id" value="<?php echo htmlspecialchars($trip_id); ?>">
+                    <input type="hidden" name="number_of_seats" id="number_of_seats"
+                        value="<?php echo htmlspecialchars($number_of_seats); ?>">
+                    <input type="hidden" name="contact" id="contact" value="<?php echo htmlspecialchars($phone); ?>">
+                    <input type="hidden" name="amount" id="amount"
+                        value="<?php echo htmlspecialchars($total_amount); ?>">
+                    <input type="hidden" name="temp_booking_ref" id="temp_booking_ref"
+                        value="<?php echo htmlspecialchars($_SESSION['temp_booking_ref'] ?? ''); ?>">
 
                     <div class="payment-options">
+                        <!-- MTN MoMo - Active with Logo -->
                         <div class="payment-option" onclick="selectPayment('momo')">
-                            <div class="payment-icon momo"><i class="fas fa-mobile-alt"></i></div>
+                            <div class="payment-icon mtn">
+                                <img src="assets/img/mtn-mobile.png" alt="MTN Mobile Money">
+                            </div>
                             <h6>MoMo Pay</h6>
-                            <p>Pay instantly with your mobile money account.</p>
+                            <p>Pay instantly with MTN Mobile Money.</p>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" value="momo" id="momo" required>
-                                <label class="form-check-label" for="momo">Select MoMo Pay</label>
+                                <input class="form-check-input" type="radio" name="payment_method" value="momo"
+                                    id="momo" required>
+                                <label class="form-check-label" for="momo">Select MTN MoMo</label>
                             </div>
                         </div>
 
-                        <div class="payment-option" onclick="selectPayment('airtel')">
-                            <div class="payment-icon airtel"><i class="fas fa-wifi"></i></div>
+                        <!-- Airtel Money - Disabled (Coming soon) -->
+                        <div class="payment-option disabled" onclick="showAirtelUnavailable()">
+                            <div class="coming-soon">Coming soon</div>
+                            <div class="payment-icon airtel">
+                                <img src="assets/img/airtel.png" alt="Airtel Money">
+                            </div>
                             <h6>Airtel Money</h6>
-                            <p>Use Airtel Money for a fast, secure transaction.</p>
+                            <p>Pay with Airtel Money (coming soon).</p>
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="payment_method" value="airtel" id="airtel" required>
-                                <label class="form-check-label" for="airtel">Select Airtel Money</label>
+                                <input class="form-check-input" type="radio" name="payment_method" value="airtel"
+                                    id="airtel" disabled>
+                                <label class="form-check-label text-muted" for="airtel">Unavailable</label>
                             </div>
                         </div>
                     </div>
 
+                    <!-- Payment Status Display -->
                     <div id="paymentStatus" style="display:none;">
                         <div class="alert alert-info">
                             <div class="d-flex align-items-center">
@@ -691,7 +850,8 @@ if ($unchecked_result) {
                                     <h6 class="mb-1" id="statusTitle">Processing payment</h6>
                                     <p class="mb-0 small" id="statusMessage">Creating your booking...</p>
                                     <div class="progress mt-2" style="height:4px;">
-                                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="statusProgress" style="width:0%"></div>
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                            id="statusProgress" style="width:0%"></div>
                                     </div>
                                 </div>
                             </div>
@@ -699,11 +859,13 @@ if ($unchecked_result) {
                     </div>
 
                     <div class="footer-actions">
-                        <a href="bookingpage.php?trip_id=<?php echo $trip_id; ?>&price=<?php echo $price; ?>" class="btn btn-outline-secondary">
+                        <a href="bookingpage.php?trip_id=<?php echo $trip_id; ?>&price=<?php echo $price; ?>"
+                            class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i> Back to edit
                         </a>
                         <button type="submit" class="btn btn-primary px-4" id="confirmBtn" disabled>
-                            <i class="fas fa-lock me-2"></i> Confirm & pay <?php echo number_format($total_amount); ?> FRW
+                            <i class="fas fa-lock me-2"></i> Confirm & pay <?php echo number_format($total_amount); ?>
+                            FRW
                         </button>
                     </div>
                 </form>
@@ -712,72 +874,54 @@ if ($unchecked_result) {
     </div>
 
     <script>
+        // ========== UI Helpers ==========
         function selectPayment(method) {
+            // Only allow 'momo' because Airtel is disabled
+            if (method !== 'momo') {
+                showAirtelUnavailable();
+                return;
+            }
             document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
             document.querySelector(`[onclick="selectPayment('${method}')"]`).classList.add('selected');
             document.getElementById(method).checked = true;
             document.getElementById('confirmBtn').disabled = false;
         }
 
-        document.querySelectorAll('.payment-option').forEach(option => {
-            option.addEventListener('click', function() {
-                const radio = this.querySelector('input[type="radio"]');
-                if (radio) selectPayment(radio.value);
+        function showAirtelUnavailable() {
+            alert('Airtel Money is not available yet. Please use MTN MoMo.');
+            // Uncheck any radio and disable confirm
+            document.getElementById('airtel').checked = false;
+            document.getElementById('momo').checked = false;
+            document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById('confirmBtn').disabled = true;
+        }
+
+        // Click on disabled Airtel box triggers the alert
+        document.querySelectorAll('.payment-option.disabled').forEach(el => {
+            el.addEventListener('click', function (e) {
+                e.stopPropagation();
+                showAirtelUnavailable();
             });
         });
 
-        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const confirmBtn = document.getElementById('confirmBtn');
-            confirmBtn.disabled = true;
-
-            const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
-            if (!paymentMethod) {
-                showError('Please select a payment method');
-                confirmBtn.disabled = false;
-                return;
-            }
-
-            const formData = new FormData(document.getElementById('paymentForm'));
-            showPaymentStatus('Processing Payment', 'Creating your booking and ticket...', 30);
-
-            try {
-                const response = await fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const text = await response.text();
-                    console.error('Server response:', text);
-                    throw new Error('Server error: ' + response.status);
-                }
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showPaymentStatus('Booking Confirmed!', 'Your ticket has been created. Redirecting...', 100);
-                    setTimeout(() => {
-                        window.location.href = `ticket_download.php?booking_id=${result.booking_id}`;
-                    }, 1500);
-                } else {
-                    throw new Error(result.error || 'Booking creation failed');
-                }
-
-            } catch (error) {
-                console.error('Error:', error);
-                showError(error.message || 'An error occurred. Please try again.');
-                confirmBtn.disabled = false;
-            }
+        // Enable click on the MTN option box
+        document.querySelector('.payment-option:not(.disabled)')?.addEventListener('click', function () {
+            selectPayment('momo');
         });
 
-        function showPaymentStatus(title, message, progress) {
+        function showPaymentStatus(title, message, progress, type = 'info') {
             const statusDiv = document.getElementById('paymentStatus');
             statusDiv.style.display = 'block';
             document.getElementById('statusTitle').textContent = title;
             document.getElementById('statusMessage').textContent = message;
-            document.getElementById('statusProgress').style.width = progress + '%';
+            document.getElementById('statusProgress').style.width = Math.min(progress, 100) + '%';
+
+            const alert = statusDiv.querySelector('.alert');
+            alert.className = 'alert ';
+            if (type === 'info') alert.className += 'alert-info';
+            else if (type === 'warning') alert.className += 'alert-warning';
+            else if (type === 'success') alert.className += 'alert-success';
+            else if (type === 'danger') alert.className += 'alert-danger';
         }
 
         function showError(message) {
@@ -785,7 +929,7 @@ if ($unchecked_result) {
             statusDiv.innerHTML = `
                 <div class="alert alert-danger">
                     <div class="d-flex align-items-center">
-                        <i class="fas fa-exclamation-triangle me-3 fa-2x"></i>
+                        <i class="fas fa-exclamation-triangle me-3"></i>
                         <div>
                             <h6 class="mb-1">Payment Error</h6>
                             <p class="mb-0 small">${message}</p>
@@ -796,8 +940,163 @@ if ($unchecked_result) {
             statusDiv.style.display = 'block';
             document.getElementById('confirmBtn').disabled = false;
         }
+
+        // ========== Main Payment Flow ==========
+        document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const confirmBtn = document.getElementById('confirmBtn');
+            confirmBtn.disabled = true;
+
+            // Get payment method
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+            if (!paymentMethod) {
+                showError('Please select a payment method.');
+                confirmBtn.disabled = false;
+                return;
+            }
+
+            // Only MTN is allowed
+            if (paymentMethod.value !== 'momo') {
+                showError('Only MTN MoMo is currently supported.');
+                confirmBtn.disabled = false;
+                return;
+            }
+
+            // Gather booking data
+            const payload = {
+                user_id: document.getElementById('user_id').value,
+                trip_id: document.getElementById('trip_id').value,
+                number_of_seats: parseInt(document.getElementById('number_of_seats').value),
+                contact: document.getElementById('contact').value,
+                amount: parseFloat(document.getElementById('amount').value),
+                payment_method: paymentMethod.value,
+                temp_booking_ref: document.getElementById('temp_booking_ref').value,
+                firstname: document.getElementById('firstname').value,
+                lastname: document.getElementById('lastname').value,
+                email: document.getElementById('email').value
+            };
+
+            // Initiate MoMo payment
+            await initiateMoMoPayment(payload, confirmBtn);
+        });
+
+        // ========== MoMo Payment Initiation ==========
+        async function initiateMoMoPayment(payload, confirmBtn) {
+            showPaymentStatus('Initiating Payment', 'Sending request to MTN MoMo...', 10, 'info');
+
+            try {
+                const response = await fetch('http://localhost:3000/process_payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phoneNumber: payload.contact,
+                        amount: payload.amount
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Payment request failed');
+                if (!data.referenceId) throw new Error('No reference ID received from payment gateway');
+
+                console.log('Payment initiated, referenceId:', data.referenceId);
+                showPaymentStatus('Payment Initiated', 'Please check your phone and approve the payment...', 30, 'warning');
+
+                // Start polling for status
+                await pollPaymentStatus(data.referenceId, payload, confirmBtn);
+
+            } catch (error) {
+                console.error('Payment initiation error:', error);
+                showError(error.message || 'Failed to initiate payment. Please try again.');
+                confirmBtn.disabled = false;
+            }
+        }
+
+        // ========== Polling ==========
+        async function pollPaymentStatus(referenceId, payload, confirmBtn) {
+            let attempts = 0;
+            const maxAttempts = 30; // 30 * 5s = 150s timeout
+
+            const checkStatus = async () => {
+                attempts++;
+                try {
+                    const response = await fetch(`http://localhost:3000/payment_status/${referenceId}`);
+                    if (!response.ok) throw new Error('Failed to check payment status');
+
+                    const statusData = await response.json();
+                    console.log('Status check:', statusData);
+
+                    const progress = Math.min(30 + attempts * 2, 90);
+                    showPaymentStatus('Checking Status', `Waiting for confirmation... (${attempts}/${maxAttempts})`, progress, 'warning');
+
+                    if (statusData.status === 'SUCCESSFUL') {
+                        showPaymentStatus('Payment Successful!', 'Creating your booking...', 95, 'success');
+                        await finalizeBooking(payload);
+                        return;
+                    } else if (statusData.status === 'FAILED') {
+                        throw new Error('Payment was declined or failed.');
+                    } else {
+                        // Still PENDING – continue polling
+                        if (attempts >= maxAttempts) {
+                            throw new Error('Payment timeout. Please check your phone and try again.');
+                        }
+                        setTimeout(checkStatus, 5000);
+                    }
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    showError(error.message || 'Error checking payment status. Please try again.');
+                    confirmBtn.disabled = false;
+                }
+            };
+
+            await checkStatus();
+        }
+
+        // ========== Finalize Booking (AJAX to same PHP) ==========
+        async function finalizeBooking(payload) {
+            try {
+                const formData = new URLSearchParams();
+                formData.append('action', 'create_booking');
+                formData.append('user_id', payload.user_id);
+                formData.append('trip_id', payload.trip_id);
+                formData.append('number_of_seats', payload.number_of_seats);
+                formData.append('payment_method', payload.payment_method);
+                formData.append('amount', payload.amount);
+                formData.append('firstname', payload.firstname);
+                formData.append('lastname', payload.lastname);
+                formData.append('email', payload.email);
+                formData.append('contact', payload.contact);
+
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || 'Booking creation failed');
+                }
+
+                showPaymentStatus('Booking Confirmed!', 'Your ticket is ready.', 100, 'success');
+                setTimeout(() => {
+                    window.location.href = `ticket_download.php?booking_id=${result.booking_id}`;
+                }, 1500);
+            } catch (error) {
+                console.error('Booking creation error:', error);
+                showError('Payment successful, but booking creation failed. Please contact support.');
+                document.getElementById('confirmBtn').disabled = false;
+            }
+        }
+
+        // Initialize: disable confirm until selection
+        document.addEventListener('DOMContentLoaded', function () {
+            // Ensure Airtel is disabled
+            document.getElementById('airtel').disabled = true;
+        });
     </script>
 </body>
+
 </html>
 <?php
 $conn->close();

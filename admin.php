@@ -231,7 +231,7 @@ $user_role_filter = isset($_GET['user_role_filter']) ? $_GET['user_role_filter']
 // Handle user delete action
 if (isset($_GET['delete_user']) && !empty($_GET['delete_user'])) {
   $delete_user_id = (int) $_GET['delete_user'];
-  if ($delete_user_id !== (int)$userId) {
+  if ($delete_user_id !== (int) $userId) {
     $delete_user_query = $conn->prepare("DELETE FROM users WHERE id = ?");
     $delete_user_query->bind_param("i", $delete_user_id);
     if ($delete_user_query->execute()) {
@@ -1200,14 +1200,12 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
         <p id="page-subtitle">Overview of system performance and key actions</p>
       </div>
       <div class="user-info">
-        <div class="text-end">
-          <div class="fw-bold text-dark">Admin Swift</div>
-          <small class="text-muted">Administrator</small>
-        </div>
-        <div class="user-avatar">AS</div>
-        <a href="logout.php" class="btn btn-outline-danger btn-sm">
-          <i class="fas fa-sign-out-alt me-1"></i> Logout
+        <a href="scan_ticket.php" class="btn btn-success me-2">
+          <i class="fas fa-qrcode me-1"></i> Scan Tickets
         </a>
+        <div class="text-end">...</div>
+        <div class="user-avatar">AS</div>
+        <a href="logout.php" class="btn btn-outline-danger btn-sm">Logout</a>
       </div>
     </div>
 
@@ -1352,7 +1350,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td><?php echo htmlspecialchars($booking['departure'] . ' → ' . $booking['destination']); ?></td>
                     <td><?php echo date('M j, Y H:i', strtotime($booking['departure_datetime'])); ?></td>
                     <td><?php echo $booking['number_of_seats']; ?></td>
-                    <td><strong><?php echo number_format($booking['number_of_seats'] * $booking['price_per_seat']); ?> FRW</strong></td>
+                    <td><strong><?php echo number_format($booking['number_of_seats'] * $booking['price_per_seat']); ?>
+                        FRW</strong></td>
                     <td>
                       <span class="badge badge-success">Confirmed</span>
                     </td>
@@ -1447,7 +1446,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                 <select name="status_filter" class="form-select" onchange="this.form.submit()">
                   <option value="">All Statuses</option>
                   <option value="active" <?php echo $status_filter == 'active' ? 'selected' : ''; ?>>Active</option>
-                  <option value="maintenance" <?php echo $status_filter == 'maintenance' ? 'selected' : ''; ?>>Maintenance</option>
+                  <option value="maintenance" <?php echo $status_filter == 'maintenance' ? 'selected' : ''; ?>>Maintenance
+                  </option>
                   <option value="inactive" <?php echo $status_filter == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
                 </select>
               </div>
@@ -1455,7 +1455,9 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                 <h6 class="text-dark mb-3"><i class="fas fa-search me-2"></i>Search Fleet</h6>
                 <div class="search-box">
                   <i class="fas fa-search"></i>
-                  <input type="text" name="search" class="form-control" placeholder="Search by plates number or model..." value="<?php echo htmlspecialchars($search_term); ?>">
+                  <input type="text" name="search" class="form-control"
+                    placeholder="Search by plates number or model..."
+                    value="<?php echo htmlspecialchars($search_term); ?>">
                 </div>
               </div>
             </div>
@@ -1482,7 +1484,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                   $status_class = '';
                   $status_icon = '';
                   $display_status = ucfirst($bus['status']); // Display the actual status from database
-
+              
                   switch ($bus['status']) {
                     case 'Active':
                       $status_class = 'badge-available';
@@ -1501,7 +1503,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                       $status_class = 'badge-available';
                       $status_icon = 'fa-question-circle';
                   }
-                ?>
+                  ?>
                   <tr>
                     <td>
                       <strong class="text-primary">#<?php echo $bus['bus_id']; ?></strong>
@@ -1523,8 +1525,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                       <div class="action-buttons">
                         <!-- Only Edit Button as requested -->
                         <a href="update_buses.php?bus_id=<?php echo $bus['bus_id']; ?>"
-                          class="btn btn-outline-warning btn-sm"
-                          title="Edit Bus">
+                          class="btn btn-outline-warning btn-sm" title="Edit Bus">
                           <i class="fas fa-edit"></i> Edit
                         </a>
                       </div>
@@ -1591,14 +1592,17 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                 <select name="route_status_filter" class="form-select" onchange="this.form.submit()">
                   <option value="">All Statuses</option>
                   <option value="active" <?php echo $route_status_filter == 'active' ? 'selected' : ''; ?>>Active</option>
-                  <option value="inactive" <?php echo $route_status_filter == 'inactive' ? 'selected' : ''; ?>>Inactive</option>
+                  <option value="inactive" <?php echo $route_status_filter == 'inactive' ? 'selected' : ''; ?>>Inactive
+                  </option>
                 </select>
               </div>
               <div class="col-md-6">
                 <h6 class="text-dark mb-3"><i class="fas fa-search me-2"></i>Search Routes</h6>
                 <div class="search-box">
                   <i class="fas fa-search"></i>
-                  <input type="text" name="route_search" class="form-control" placeholder="Search by departure, destination, or price..." value="<?php echo htmlspecialchars($route_search_term); ?>">
+                  <input type="text" name="route_search" class="form-control"
+                    placeholder="Search by departure, destination, or price..."
+                    value="<?php echo htmlspecialchars($route_search_term); ?>">
                 </div>
               </div>
             </div>
@@ -1655,7 +1659,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td>
                       <div class="action-buttons">
                         <!-- Only Edit button - Delete button removed as requested -->
-                        <a href="update_routes.php?route_id=<?php echo $route['route_id']; ?>" class="btn btn-sm btn-outline-warning">
+                        <a href="update_routes.php?route_id=<?php echo $route['route_id']; ?>"
+                          class="btn btn-sm btn-outline-warning">
                           <i class="fas fa-edit"></i> Edit
                         </a>
                       </div>
@@ -1728,17 +1733,22 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                 <h6 class="text-dark mb-3"><i class="fas fa-filter me-2"></i>Status Filter</h6>
                 <select name="trip_status_filter" class="form-select" onchange="this.form.submit()">
                   <option value="">All Statuses</option>
-                  <option value="available" <?php echo $trip_status_filter == 'available' ? 'selected' : ''; ?>>Available</option>
+                  <option value="available" <?php echo $trip_status_filter == 'available' ? 'selected' : ''; ?>>Available
+                  </option>
                   <option value="ontrip" <?php echo $trip_status_filter == 'ontrip' ? 'selected' : ''; ?>>On Trip</option>
-                  <option value="arrived" <?php echo $trip_status_filter == 'arrived' ? 'selected' : ''; ?>>Arrived</option>
-                  <option value="maintenance" <?php echo $trip_status_filter == 'maintenance' ? 'selected' : ''; ?>>Maintenance</option>
+                  <option value="arrived" <?php echo $trip_status_filter == 'arrived' ? 'selected' : ''; ?>>Arrived
+                  </option>
+                  <option value="maintenance" <?php echo $trip_status_filter == 'maintenance' ? 'selected' : ''; ?>>
+                    Maintenance</option>
                 </select>
               </div>
               <div class="col-md-6">
                 <h6 class="text-dark mb-3"><i class="fas fa-search me-2"></i>Search Trips</h6>
                 <div class="search-box">
                   <i class="fas fa-search"></i>
-                  <input type="text" name="trip_search" class="form-control" placeholder="Search by bus plates, driver, departure, destination..." value="<?php echo htmlspecialchars($trip_search_term); ?>">
+                  <input type="text" name="trip_search" class="form-control"
+                    placeholder="Search by bus plates, driver, departure, destination..."
+                    value="<?php echo htmlspecialchars($trip_search_term); ?>">
                 </div>
               </div>
             </div>
@@ -1807,7 +1817,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td>
                       <div class="action-buttons">
                         <!-- Edit button for all trips -->
-                        <a href="update_trips.php?id=<?php echo $trip['trip_id']; ?>" class="btn btn-sm btn-outline-warning" title="Edit Trip">
+                        <a href="update_trips.php?id=<?php echo $trip['trip_id']; ?>" class="btn btn-sm btn-outline-warning"
+                          title="Edit Trip">
                           <i class="fas fa-edit"></i>
                         </a>
 
@@ -1817,8 +1828,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                         <!-- Reset to Available button for arrived trips -->
                         <?php if ($trip['status'] == 'arrived'): ?>
                           <a href="update_trips.php?id=<?php echo $trip['trip_id']; ?>&status=available"
-                            class="btn btn-sm btn-success"
-                            title="Reset to Available"
+                            class="btn btn-sm btn-success" title="Reset to Available"
                             onclick="return confirm('Reset this trip to available status?')">
                             <i class="fas fa-redo me-1"></i>Reset
                           </a>
@@ -1852,7 +1862,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
           <h4 class="mb-0"><i class="fas fa-ticket-alt me-2"></i>Booking Management</h4>
           <form method="GET" class="d-flex align-items-center gap-2">
             <input type="hidden" name="section" value="manage-bookings">
-            <input type="date" name="booking_date_filter" class="form-control form-control-sm" value="<?php echo htmlspecialchars($booking_date_filter); ?>">
+            <input type="date" name="booking_date_filter" class="form-control form-control-sm"
+              value="<?php echo htmlspecialchars($booking_date_filter); ?>">
             <button type="submit" class="btn btn-sm btn-primary">
               <i class="fas fa-filter me-1"></i>Filter
             </button>
@@ -1886,10 +1897,12 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td><?php echo htmlspecialchars($booking['contact']); ?></td>
                     <td>
                       <?php echo htmlspecialchars($booking['departure'] . ' → ' . $booking['destination']); ?><br>
-                      <small class="text-muted"><?php echo date('M j, Y H:i', strtotime($booking['departure_datetime'])); ?></small>
+                      <small
+                        class="text-muted"><?php echo date('M j, Y H:i', strtotime($booking['departure_datetime'])); ?></small>
                     </td>
                     <td><?php echo $booking['number_of_seats']; ?></td>
-                    <td><strong><?php echo number_format($booking['number_of_seats'] * $booking['price_per_seat']); ?> FRW</strong></td>
+                    <td><strong><?php echo number_format($booking['number_of_seats'] * $booking['price_per_seat']); ?>
+                        FRW</strong></td>
                     <td><?php echo date('M j, Y H:i', strtotime($booking['booking_date'])); ?></td>
                   </tr>
                 <?php endwhile; ?>
@@ -1964,7 +1977,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td><?php echo date('M j, Y', strtotime($driver['created_at'])); ?></td>
                     <td>
                       <div class="action-buttons">
-                        <a href="update_drivers.php?id=<?php echo $driver['driver_id']; ?>" class="btn btn-sm btn-outline-warning">
+                        <a href="update_drivers.php?id=<?php echo $driver['driver_id']; ?>"
+                          class="btn btn-sm btn-outline-warning">
                           <i class="fas fa-edit"></i>
                         </a>
 
@@ -2022,7 +2036,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td><?php echo date('M j, Y', strtotime($customer['created_at'])); ?></td>
                     <td>
                       <div class="action-buttons">
-                        <a href="update_customer.php?id=<?php echo $customer['customer_id']; ?>" class="btn btn-sm btn-outline-warning">
+                        <a href="update_customer.php?id=<?php echo $customer['customer_id']; ?>"
+                          class="btn btn-sm btn-outline-warning">
                           <i class="fas fa-edit"></i>
                         </a>
 
@@ -2064,7 +2079,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
               <option value="">All Roles</option>
               <option value="admin" <?php echo $user_role_filter == 'admin' ? 'selected' : ''; ?>>Admin</option>
               <option value="driver" <?php echo $user_role_filter == 'driver' ? 'selected' : ''; ?>>Driver</option>
-              <option value="passenger" <?php echo $user_role_filter == 'passenger' ? 'selected' : ''; ?>>Passenger</option>
+              <option value="passenger" <?php echo $user_role_filter == 'passenger' ? 'selected' : ''; ?>>Passenger
+              </option>
             </select>
           </div>
         </form>
@@ -2089,18 +2105,22 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     <td><?php echo htmlspecialchars($user['name'] ?? ''); ?></td>
                     <td><?php echo htmlspecialchars($user['email'] ?? ''); ?></td>
                     <td>
-                      <span class="badge <?php echo ($user['role'] ?? 'passenger') === 'admin' ? 'bg-danger' : (($user['role'] ?? 'passenger') === 'driver' ? 'bg-warning text-dark' : 'bg-info'); ?>">
+                      <span
+                        class="badge <?php echo ($user['role'] ?? 'passenger') === 'admin' ? 'bg-danger' : (($user['role'] ?? 'passenger') === 'driver' ? 'bg-warning text-dark' : 'bg-info'); ?>">
                         <?php echo htmlspecialchars(ucfirst($user['role'] ?? 'passenger')); ?>
                       </span>
                     </td>
-                    <td><?php echo !empty($user['created_at']) ? date('M j, Y', strtotime($user['created_at'])) : 'N/A'; ?></td>
+                    <td><?php echo !empty($user['created_at']) ? date('M j, Y', strtotime($user['created_at'])) : 'N/A'; ?>
+                    </td>
                     <td>
                       <div class="action-buttons">
                         <a href="register.php" class="btn btn-sm btn-outline-primary">
                           <i class="fas fa-edit"></i>
                         </a>
-                        <?php if ((int)$user['id'] !== (int)$userId): ?>
-                          <a href="admin.php?section=manage-users&delete_user=<?php echo $user['id']; ?>" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to delete this user?')">
+                        <?php if ((int) $user['id'] !== (int) $userId): ?>
+                          <a href="admin.php?section=manage-users&delete_user=<?php echo $user['id']; ?>"
+                            class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Are you sure you want to delete this user?')">
                             <i class="fas fa-trash"></i>
                           </a>
                         <?php endif; ?>
@@ -2205,22 +2225,30 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
               $payments_report = $conn->query($payments_report_query);
               if ($payments_report && $payments_report->num_rows > 0) {
                 while ($payment = $payments_report->fetch_assoc()) {
-              ?>
+                  ?>
                   <tr>
                     <td><strong>#<?php echo $payment['payment_id']; ?></strong></td>
                     <td>#BK<?php echo str_pad($payment['booking_id'], 5, '0', STR_PAD_LEFT); ?></td>
-                    <td><?php echo htmlspecialchars(trim(($payment['firstname'] ?? '') . ' ' . ($payment['lastname'] ?? ''))); ?></td>
-                    <td><?php echo htmlspecialchars(($payment['departure'] ?? '') . ' → ' . ($payment['destination'] ?? '')); ?></td>
+                    <td>
+                      <?php echo htmlspecialchars(trim(($payment['firstname'] ?? '') . ' ' . ($payment['lastname'] ?? ''))); ?>
+                    </td>
+                    <td>
+                      <?php echo htmlspecialchars(($payment['departure'] ?? '') . ' → ' . ($payment['destination'] ?? '')); ?>
+                    </td>
                     <td><strong><?php echo number_format($payment['amount'], 2); ?> FRW</strong></td>
-                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $payment['payment_method'] ?? ''))); ?></td>
+                    <td><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $payment['payment_method'] ?? ''))); ?>
+                    </td>
                     <td>
                       <span class="badge bg-success">
-                        <i class="fas fa-check-circle me-1"></i><?php echo ucfirst($payment['payment_status'] ?? 'completed'); ?>
+                        <i
+                          class="fas fa-check-circle me-1"></i><?php echo ucfirst($payment['payment_status'] ?? 'completed'); ?>
                       </span>
                     </td>
-                    <td><?php echo !empty($payment['time_paid']) ? date('M j, Y H:i', strtotime($payment['time_paid'])) : 'N/A'; ?></td>
+                    <td>
+                      <?php echo !empty($payment['time_paid']) ? date('M j, Y H:i', strtotime($payment['time_paid'])) : 'N/A'; ?>
+                    </td>
                   </tr>
-                <?php
+                  <?php
                 }
               } else {
                 ?>
@@ -2263,13 +2291,11 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
             <div class="row">
               <div class="col-md-3 mb-3">
                 <label class="form-label text-dark fw-bold">Date Range</label>
-                <input type="date" name="start_date" class="form-control"
-                  value="<?php echo $start_date; ?>">
+                <input type="date" name="start_date" class="form-control" value="<?php echo $start_date; ?>">
               </div>
               <div class="col-md-3 mb-3">
                 <label class="form-label text-dark fw-bold">To Date</label>
-                <input type="date" name="end_date" class="form-control"
-                  value="<?php echo $end_date; ?>">
+                <input type="date" name="end_date" class="form-control" value="<?php echo $end_date; ?>">
               </div>
               <div class="col-md-3 mb-3">
                 <label class="form-label text-dark fw-bold">Route</label>
@@ -2279,7 +2305,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                   $routes = $conn->query("SELECT * FROM routes ORDER BY departure, destination");
                   while ($route = $routes->fetch_assoc()):
                     $selected = ($route_filter == $route['route_id']) ? 'selected' : '';
-                  ?>
+                    ?>
                     <option value="<?php echo $route['route_id']; ?>" <?php echo $selected; ?>>
                       <?php echo htmlspecialchars($route['departure'] . ' → ' . $route['destination']); ?>
                     </option>
@@ -2311,13 +2337,15 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
           </div>
           <div class="col-md-3">
             <div class="stats-card text-center">
-              <div class="stat-number text-info"><?php echo number_format($summary['avg_passengers_per_trip'] ?? 0, 1); ?></div>
+              <div class="stat-number text-info">
+                <?php echo number_format($summary['avg_passengers_per_trip'] ?? 0, 1); ?></div>
               <p class="mb-0 text-muted">Avg Passengers/Trip</p>
             </div>
           </div>
           <div class="col-md-3">
             <div class="stats-card text-center">
-              <div class="stat-number text-warning"><?php echo number_format($summary['total_revenue'] ?? 0); ?> FRW</div>
+              <div class="stat-number text-warning"><?php echo number_format($summary['total_revenue'] ?? 0); ?> FRW
+              </div>
               <p class="mb-0 text-muted">Total Revenue</p>
             </div>
           </div>
@@ -2345,7 +2373,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                 <?php while ($report = $trip_reports->fetch_assoc()):
                   $completion_rate = $report['total_seats_sold'] > 0 ?
                     round(($report['total_seats_sold'] / ($report['total_seats_sold'] + $report['available_seats'])) * 100, 1) : 0;
-                ?>
+                  ?>
                   <tr>
                     <td><strong>#<?php echo $report['trip_id']; ?></strong></td>
                     <td><?php echo htmlspecialchars($report['departure'] . ' → ' . $report['destination']); ?></td>
@@ -2358,7 +2386,8 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                       <small class="text-muted">passengers</small>
                     </td>
                     <td>
-                      <span class="fw-bold text-success"><?php echo number_format($report['total_revenue'] ?? 0); ?> FRW</span>
+                      <span class="fw-bold text-success"><?php echo number_format($report['total_revenue'] ?? 0); ?>
+                        FRW</span>
                     </td>
                     <td>
                       <?php
@@ -2384,13 +2413,11 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                     </td>
                     <td>
                       <div class="progress" style="height: 20px;">
-                        <div class="progress-bar 
+                        <div
+                          class="progress-bar 
                       <?php echo $completion_rate >= 80 ? 'bg-success' : ($completion_rate >= 50 ? 'bg-warning' : 'bg-info'); ?>"
-                          role="progressbar"
-                          style="width: <?php echo $completion_rate; ?>%"
-                          aria-valuenow="<?php echo $completion_rate; ?>"
-                          aria-valuemin="0"
-                          aria-valuemax="100">
+                          role="progressbar" style="width: <?php echo $completion_rate; ?>%"
+                          aria-valuenow="<?php echo $completion_rate; ?>" aria-valuemin="0" aria-valuemax="100">
                           <?php echo $completion_rate; ?>%
                         </div>
                       </div>
@@ -2428,9 +2455,12 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
                   <tbody>
                     <?php while ($route_revenue = $revenue_by_route->fetch_assoc()): ?>
                       <tr>
-                        <td><?php echo htmlspecialchars($route_revenue['departure'] . ' → ' . $route_revenue['destination']); ?></td>
+                        <td>
+                          <?php echo htmlspecialchars($route_revenue['departure'] . ' → ' . $route_revenue['destination']); ?>
+                        </td>
                         <td><?php echo $route_revenue['trips_count'] ?? 0; ?></td>
-                        <td class="fw-bold text-success"><?php echo number_format($route_revenue['route_revenue'] ?? 0); ?> FRW</td>
+                        <td class="fw-bold text-success">
+                          <?php echo number_format($route_revenue['route_revenue'] ?? 0); ?> FRW</td>
                       </tr>
                     <?php endwhile; ?>
                   </tbody>
@@ -2544,7 +2574,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
       const sidebarLinks = document.querySelectorAll('.sidebar .nav-link');
       const sections = document.querySelectorAll('.dashboard-section');
       const pageTitle = document.getElementById('page-title');
@@ -2642,7 +2672,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       }
 
       sidebarLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
           e.preventDefault();
           const sectionId = this.getAttribute('data-section');
           if (sectionId) {
@@ -2652,7 +2682,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       });
 
       // Handle browser back/forward buttons
-      window.addEventListener('popstate', function() {
+      window.addEventListener('popstate', function () {
         const urlParams = new URLSearchParams(window.location.search);
         const sectionParam = urlParams.get('section');
         if (sectionParam && pageData[sectionParam]) {
@@ -2666,7 +2696,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       let searchTimeout;
       const searchInput = document.querySelector('input[name="search"]');
       if (searchInput) {
-        searchInput.addEventListener('input', function() {
+        searchInput.addEventListener('input', function () {
           clearTimeout(searchTimeout);
           searchTimeout = setTimeout(() => {
             document.getElementById('busFilterForm').submit();
@@ -2677,7 +2707,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       // Add confirmation for actions
       const actionButtons = document.querySelectorAll('a[href*="assign_bus"], a[href*="release_bus"]');
       actionButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
+        button.addEventListener('click', function (e) {
           const action = this.href.includes('assign_bus') ? 'assign' : 'release';
           const message = action === 'assign' ?
             'Are you sure you want to assign this bus to a new trip?' :
@@ -2728,7 +2758,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
     const routeSearchInput = document.querySelector('input[name="route_search"]');
     if (routeSearchInput) {
       let routeSearchTimeout;
-      routeSearchInput.addEventListener('input', function() {
+      routeSearchInput.addEventListener('input', function () {
         clearTimeout(routeSearchTimeout);
         routeSearchTimeout = setTimeout(() => {
           document.getElementById('routeFilterForm').submit();
@@ -2739,7 +2769,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
     const tripSearchInput = document.querySelector('input[name="trip_search"]');
     if (tripSearchInput) {
       let tripSearchTimeout;
-      tripSearchInput.addEventListener('input', function() {
+      tripSearchInput.addEventListener('input', function () {
         clearTimeout(tripSearchTimeout);
         tripSearchTimeout = setTimeout(() => {
           document.getElementById('tripFilterForm').submit();
@@ -2816,7 +2846,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
     // Auto-submit report filter form when dates change
     const reportDateInputs = document.querySelectorAll('#reportFilterForm input[type="date"]');
     reportDateInputs.forEach(input => {
-      input.addEventListener('change', function() {
+      input.addEventListener('change', function () {
         document.getElementById('reportFilterForm').submit();
       });
     });
