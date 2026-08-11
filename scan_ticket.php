@@ -551,7 +551,7 @@ $user_name = $_SESSION['user_name'] ?? 'Staff';
         // Parse "SWIFTPASS|ticket_id|booking_id|hash"
         const parts = decodedText.split('|');
         if (parts.length !== 4 || parts[0] !== 'SWIFTPASS') {
-            showResult('error', 'Invalid QR code format. (Expected "SWIFTPASS|id|booking|hash")');
+            showResult('error', 'Invalid QR code format. Please scan a valid ticket.');
             return;
         }
 

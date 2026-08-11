@@ -507,12 +507,38 @@ if (empty($ticket_details) && empty($booking_details)) {
             .btn-action { width: 100%; justify-content: center; }
         }
 
+        /* ===================== Print: force the ticket onto a single page ===================== */
+        @page {
+            size: auto;
+            margin: 10mm;
+        }
+
         @media print {
-            body { background: #fff !important; padding: 0 !important; }
-            .ticket-wrapper { max-width: 100% !important; }
-            .bus-ticket { box-shadow: none !important; border-radius: 0 !important; }
-            .action-buttons { display: none !important; }
-            .no-print { display: none !important; }
+            html, body {
+                background: #fff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                height: auto !important;
+            }
+            .ticket-wrapper {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            .bus-ticket {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            /* Trim vertical padding so a full ticket comfortably fits one printed page */
+            .ticket-header { padding: 14px 24px; }
+            .ticket-body { padding: 16px 24px; }
+            .route-display { padding: 12px 20px; margin-bottom: 14px; }
+            .ticket-grid { margin-bottom: 12px; gap: 8px; }
+            .ticket-field { padding: 6px 0; }
+            .ticket-bottom { margin-top: 12px; padding-top: 12px; }
+            .ticket-footer { padding: 8px 24px; }
+            .action-buttons, .no-print { display: none !important; }
         }
 
         .ticket-used {
@@ -717,7 +743,7 @@ if (empty($ticket_details) && empty($booking_details)) {
         <!-- Action Buttons -->
         <div class="action-buttons no-print">
             <button onclick="downloadTicket()" class="btn-action btn-download">
-                <i class="fas fa-download"></i> Download Ticket
+                <i class="fas fa-file-pdf"></i> Download Ticket
             </button>
             <button onclick="printTicket()" class="btn-action btn-print">
                 <i class="fas fa-print"></i> Print Ticket
@@ -730,6 +756,7 @@ if (empty($ticket_details) && empty($booking_details)) {
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
         // ========== QR Code Generation (NEW format) ==========
         function generateQRCode() {
@@ -754,36 +781,60 @@ if (empty($ticket_details) && empty($booking_details)) {
             window.print();
         }
 
-        function downloadTicket() {
+        // Downloads a single-page PDF of the ticket (snapshot includes the QR code
+        // and all ticket details, exactly as shown on screen).
+        async function downloadTicket() {
             const ticketElement = document.querySelector('.bus-ticket');
             const downloadBtn = document.querySelector('.btn-download');
-
             const originalText = downloadBtn.innerHTML;
-            downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Downloading...';
+
+            downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing PDF...';
             downloadBtn.disabled = true;
 
-            html2canvas(ticketElement, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            }).then(canvas => {
-                const image = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.download = 'swiftpass-ticket-<?php echo $ticket_details['ticket_id'] ?? $booking_details['booking_id']; ?>.png';
-                link.href = image;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+            try {
+                const canvas = await html2canvas(ticketElement, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
 
-                downloadBtn.innerHTML = originalText;
-                downloadBtn.disabled = false;
-            }).catch(error => {
-                console.error('Error generating ticket image:', error);
-                downloadBtn.innerHTML = originalText;
-                downloadBtn.disabled = false;
+                const imgData = canvas.toDataURL('image/png');
+
+                // Convert the captured pixel size to mm (96 CSS px per inch)
+                const pxToMm = 25.4 / 96;
+                const imgWidthMm = canvas.width * pxToMm / 2;   // /2 to undo the scale:2 capture
+                const imgHeightMm = canvas.height * pxToMm / 2;
+
+                // Fit the ticket onto one standard A4 page, centered, preserving aspect ratio
+                const pageWidthMm = 210;
+                const pageHeightMm = 297;
+                const marginMm = 10;
+                const maxWidthMm = pageWidthMm - marginMm * 2;
+                const maxHeightMm = pageHeightMm - marginMm * 2;
+
+                const scale = Math.min(maxWidthMm / imgWidthMm, maxHeightMm / imgHeightMm, 1);
+                const drawWidthMm = imgWidthMm * scale;
+                const drawHeightMm = imgHeightMm * scale;
+                const offsetX = (pageWidthMm - drawWidthMm) / 2;
+                const offsetY = (pageHeightMm - drawHeightMm) / 2;
+
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                pdf.addImage(imgData, 'PNG', offsetX, offsetY, drawWidthMm, drawHeightMm);
+                pdf.save('swiftpass-ticket-<?php echo $ticket_details['ticket_id'] ?? $booking_details['booking_id']; ?>.pdf');
+            } catch (error) {
+                console.error('Error generating ticket PDF:', error);
                 alert('Error downloading ticket. Please try again.');
-            });
+            } finally {
+                downloadBtn.innerHTML = originalText;
+                downloadBtn.disabled = false;
+            }
         }
 
         // ========== Polling & Real‑time Status Update ==========

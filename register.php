@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // 1. Password match check
     if ($pass !== $confirm) {
-        $serverError = "❌ Passwords do not match.";
+        $serverError = "Passwords do not match.";
     }
 
     // 2. Check for duplicate email
@@ -26,11 +26,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $checkEmail->execute();
             $checkEmail->store_result();
             if ($checkEmail->num_rows > 0) {
-                $serverError = "❌ This email address is already registered.";
+                $serverError = "This email address is already registered.";
             }
             $checkEmail->close();
         } else {
-            $serverError = "❌ Database error (email check).";
+            $serverError = "Database error (email check).";
         }
     }
 
@@ -42,11 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $checkPhone->execute();
             $checkPhone->store_result();
             if ($checkPhone->num_rows > 0) {
-                $serverError = "❌ This phone number is already registered.";
+                $serverError = "This phone number is already registered.";
             }
             $checkPhone->close();
         } else {
-            $serverError = "❌ Database error (phone check).";
+            $serverError = "Database error (phone check).";
         }
     }
 
@@ -59,15 +59,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt) {
             $stmt->bind_param("ssssss", $first, $last, $email, $phone, $passwordToStore, $role);
             if ($stmt->execute()) {
-                $serverSuccess = "✅ Registration successful! You can now <a href='login.php'>log in</a>.";
+                $serverSuccess = "Registration successful! You can now <a href='login.php'>log in</a>.";
                 // Clear POST to avoid repopulating fields after success (optional)
                 $_POST = [];
             } else {
-                $serverError = "❌ Registration failed: " . $stmt->error;
+                $serverError = "Registration failed: " . $stmt->error;
             }
             $stmt->close();
         } else {
-            $serverError = "❌ System error: " . $conn->error;
+            $serverError = "System error: " . $conn->error;
         }
     }
 
@@ -81,19 +81,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SwiftPass - Create Account | Join Today</title>
   <meta name="description" content="Create your SwiftPass account to book bus tickets easily and manage your travel plans.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
+      /* -- SwiftPass brand palette (matches existing site theme) -- */
       --primary-blue: #2563eb;
       --primary-dark: #1d4ed8;
       --secondary-blue: #3b82f6;
       --accent-cyan: #06b6d4;
+      --accent-cyan-dark: #0891b2;
       --text-primary: #1e293b;
       --text-secondary: #64748b;
       --text-light: #94a3b8;
@@ -102,20 +103,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       --border: #e2e8f0;
       --border-focus: #3b82f6;
       --success: #10b981;
+      --success-bg: #d1fae5;
       --warning: #f59e0b;
       --error: #ef4444;
+      --error-bg: #fee2e2;
       --gradient-primary: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-dark) 100%);
       --gradient-secondary: linear-gradient(135deg, var(--secondary-blue) 0%, var(--accent-cyan) 100%);
       --gradient-bg: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%);
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-      --border-radius: 20px;
+      --shadow-card: 0 25px 50px -18px rgba(29, 78, 216, 0.35);
+      --radius: 20px;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: var(--gradient-bg);
       color: var(--text-primary);
       line-height: 1.6;
@@ -123,206 +123,276 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 2rem 1rem;
-      position: relative;
-      overflow-x: hidden;
+      padding: 2.5rem 1rem;
     }
 
-    /* Animated Background */
-    .bg-decorations {
-      position: fixed;
-      top: 0;
-      left: 0;
+    /* ===================== Ticket / Boarding-pass card ===================== */
+
+    .pass-shell {
       width: 100%;
-      height: 100%;
-      z-index: -1;
-      overflow: hidden;
+      max-width: 900px;
     }
 
-    .bg-shape {
-      position: absolute;
-      border-radius: 50%;
-      opacity: 0.08;
-      animation: float 30s infinite ease-in-out;
-    }
-
-    .bg-shape:nth-child(1) {
-      width: 400px;
-      height: 400px;
-      background: var(--gradient-primary);
-      top: -200px;
-      right: -200px;
-      animation-delay: 0s;
-    }
-
-    .bg-shape:nth-child(2) {
-      width: 250px;
-      height: 250px;
-      background: var(--gradient-secondary);
-      bottom: -125px;
-      left: -125px;
-      animation-delay: -15s;
-    }
-
-    .bg-shape:nth-child(3) {
-      width: 180px;
-      height: 180px;
-      background: linear-gradient(135deg, var(--accent-cyan), var(--secondary-blue));
-      top: 40%;
-      right: -90px;
-      animation-delay: -25s;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.08; }
-      33% { transform: translateY(-40px) rotate(120deg); opacity: 0.12; }
-      66% { transform: translateY(20px) rotate(240deg); opacity: 0.06; }
-    }
-
-    /* Main Container */
-    .register-container {
-      width: 100%;
-      max-width: 580px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .register-card {
+    .pass-card {
+      display: flex;
+      align-items: stretch;
       background: var(--surface);
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow-xl);
-      border: 1px solid rgba(255, 255, 255, 0.8);
-      overflow: hidden;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+      overflow: visible;
       position: relative;
-      backdrop-filter: blur(10px);
     }
 
-    .register-card::before {
+    /* ---- Stub (left / top): identity + "route" of the journey ---- */
+
+    .stub-panel {
+      flex: 0 0 268px;
+      background: var(--gradient-primary);
+      color: #fff;
+      padding: 2.25rem 1.85rem;
+      border-radius: var(--radius) 0 0 var(--radius);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stub-panel::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background: var(--gradient-primary);
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        115deg,
+        rgba(255, 255, 255, 0.06) 0 2px,
+        transparent 2px 26px
+      );
+      pointer-events: none;
     }
 
-    /* Header Section */
-    .header-section {
-      background: var(--gradient-primary);
-      color: white;
-      text-align: center;
-      padding: 2.5rem 2rem 2rem;
+    .stub-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
       position: relative;
-      overflow: hidden;
+      z-index: 1;
     }
 
-    .header-section::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -20%;
-      width: 200px;
-      height: 200px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 50%;
-      transform: rotate(45deg);
-    }
-
-    .logo-container {
-      display: inline-block;
-      position: relative;
-      padding: 4px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      margin-bottom: 1.5rem;
-      z-index: 2;
-    }
-
-    .logo-inner {
-      background: var(--surface);
-      border-radius: 50%;
-      padding: 1.2rem;
+    .stub-brand .icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: var(--accent-cyan);
+      color: var(--primary-dark);
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 80px;
-      height: 80px;
-    }
-
-    .bus-logo {
-      font-size: 2rem;
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-
-    .header-title {
-      font-size: 2rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      position: relative;
-      z-index: 2;
-      letter-spacing: -0.5px;
-    }
-
-    .header-subtitle {
-      opacity: 0.9;
       font-size: 1.05rem;
+      flex-shrink: 0;
+    }
+
+    .stub-brand .name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: -0.01em;
+    }
+
+    .stub-tagline {
+      margin-top: 0.35rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.6);
       position: relative;
-      z-index: 2;
+      z-index: 1;
     }
 
-    /* Form Section */
-    .form-section {
-      padding: 2.5rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
+    /* Route strip: SIGN UP -----bus-----> ON BOARD */
+    .route-strip {
       position: relative;
-    }
-
-    .form-row {
+      z-index: 1;
       display: flex;
-      gap: 1rem;
-      margin-bottom: 0;
+      align-items: center;
+      gap: 0.6rem;
+      margin: 2.1rem 0 2rem;
     }
 
-    .form-row .form-group {
-      flex: 1;
-      margin-bottom: 1.5rem;
+    .route-point {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      color: var(--accent-cyan);
+      white-space: nowrap;
     }
+
+    .route-track {
+      flex: 1;
+      height: 1px;
+      background-image: linear-gradient(to right, rgba(255,255,255,0.35) 0 6px, transparent 6px 11px);
+      background-size: 11px 1px;
+      background-repeat: repeat-x;
+      position: relative;
+    }
+
+    .route-bus {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      transform: translate(-50%, -50%);
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      animation: travel 4.5s ease-in-out infinite;
+    }
+
+    @keyframes travel {
+      0%, 100% { left: 4%; }
+      50% { left: 96%; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .route-bus { animation: none; left: 50%; }
+    }
+
+    /* Barcode flourish */
+    .stub-barcode {
+      position: relative;
+      z-index: 1;
+      height: 34px;
+      margin-bottom: 1.75rem;
+      background-image: repeating-linear-gradient(
+        to right,
+        rgba(255, 255, 255, 0.85) 0px, rgba(255, 255, 255, 0.85) 2px,
+        transparent 2px, transparent 5px,
+        rgba(255, 255, 255, 0.85) 5px, rgba(255, 255, 255, 0.85) 8px,
+        transparent 8px, transparent 10px,
+        rgba(255, 255, 255, 0.85) 10px, rgba(255, 255, 255, 0.85) 13px,
+        transparent 13px, transparent 15px
+      );
+      opacity: 0.4;
+    }
+
+    .stub-meta {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.1rem;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .stub-meta .meta-label {
+      display: block;
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.55);
+      margin-bottom: 0.2rem;
+    }
+
+    .stub-meta .meta-value {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    /* ---- Perforation divider ---- */
+
+    .perforation {
+      flex: 0 0 26px;
+      position: relative;
+      background: var(--surface);
+    }
+
+    .perforation::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      border-left: 2px dashed var(--border);
+    }
+
+    .perforation .notch {
+      position: absolute;
+      left: 50%;
+      width: 30px;
+      height: 30px;
+      background: var(--background);
+      border-radius: 50%;
+      transform: translateX(-50%);
+    }
+
+    .perforation .notch.top { top: -15px; }
+    .perforation .notch.bottom { bottom: -15px; }
+
+    /* ---- Form panel ---- */
+
+    .form-panel {
+      flex: 1;
+      padding: 2.5rem 2.5rem 2.25rem;
+      min-width: 0;
+    }
+
+    .form-heading {
+      margin-bottom: 1.6rem;
+    }
+
+    .form-heading h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.55rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+
+    .form-heading p {
+      margin-top: 0.35rem;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .form-group { margin-bottom: 1.35rem; position: relative; }
+
+    .form-row { display: flex; gap: 1rem; }
+    .form-row .form-group { flex: 1; }
 
     .form-label {
       display: block;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.4rem;
     }
+
+    .form-label i { color: var(--text-light); width: 14px; }
 
     .form-input {
       width: 100%;
-      padding: 0.9rem 1rem;
-      border: 2px solid var(--border);
-      border-radius: 14px;
-      font-size: 1rem;
-      transition: all 0.3s ease;
-      background: var(--surface);
+      padding: 0.8rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      background: #fff;
       color: var(--text-primary);
     }
 
-    .form-input:focus {
+    .form-input::placeholder { color: var(--text-light); }
+
+    .form-input:focus,
+    .form-input:focus-visible {
       outline: none;
       border-color: var(--border-focus);
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-      transform: translateY(-1px);
-    }
-
-    .form-input::placeholder {
-      color: var(--text-light);
     }
 
     .form-input.error {
@@ -330,46 +400,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       animation: shake 0.3s ease-in-out;
     }
 
-    .form-input.success {
-      border-color: var(--success);
-    }
+    .form-input.success { border-color: var(--success); }
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
     }
 
-    .error-message {
-      color: var(--error);
-      font-size: 0.8rem;
-      margin-top: 0.4rem;
+    .error-message, .success-message {
+      font-size: 0.78rem;
+      margin-top: 0.35rem;
       display: none;
       align-items: center;
-      gap: 0.25rem;
+      gap: 0.3rem;
     }
+    .error-message { color: var(--error); }
+    .success-message { color: var(--success); }
+    .error-message.show, .success-message.show { display: flex; }
 
-    .error-message.show {
-      display: flex;
-    }
-
-    .success-message {
-      color: var(--success);
-      font-size: 0.8rem;
-      margin-top: 0.4rem;
-      display: none;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .success-message.show {
-      display: flex;
-    }
-
-    /* Password Container */
-    .password-container {
-      position: relative;
-    }
+    .password-container { position: relative; }
 
     .password-toggle {
       position: absolute;
@@ -377,69 +427,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       top: 50%;
       transform: translateY(-50%);
       cursor: pointer;
-      color: var(--text-secondary);
-      font-size: 1.1rem;
-      transition: all 0.2s ease;
-      z-index: 3;
+      color: var(--text-light);
+      font-size: 1rem;
     }
+    .password-toggle:hover { color: var(--primary-blue); }
+    .password-input { padding-right: 2.9rem; }
 
-    .password-toggle:hover {
-      color: var(--primary-blue);
-    }
-
-    .password-input {
-      padding-right: 3rem;
-    }
-
-    /* Password Strength */
     .password-strength {
-      height: 5px;
+      height: 4px;
       background: var(--border);
-      margin-top: 0.6rem;
+      margin-top: 0.55rem;
       border-radius: 3px;
       overflow: hidden;
-      transition: all 0.3s ease;
     }
-
     .strength-bar {
       height: 100%;
       width: 0%;
       background: var(--error);
-      transition: all 0.3s ease;
+      transition: width 0.3s ease, background 0.3s ease;
       border-radius: 3px;
     }
-
-    .strength-text {
-      font-size: 0.75rem;
-      margin-top: 0.3rem;
-      font-weight: 500;
-    }
-
+    .strength-text { font-size: 0.72rem; margin-top: 0.3rem; font-weight: 600; }
     .strength-weak { color: var(--error); }
     .strength-fair { color: var(--warning); }
-    .strength-good { color: var(--success); }
-    .strength-strong { color: var(--success); }
+    .strength-good, .strength-strong { color: var(--success); }
 
     .password-requirements {
-      font-size: 0.8rem;
+      font-size: 0.76rem;
       color: var(--text-secondary);
-      margin-top: 0.5rem;
-      line-height: 1.4;
+      margin-top: 0.45rem;
     }
 
-    /* Checkbox */
     .checkbox-container {
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
-      margin: 1.5rem 0 2rem;
+      gap: 0.7rem;
+      margin: 1.4rem 0 1.75rem;
     }
 
     .custom-checkbox {
-      width: 22px;
-      height: 22px;
-      border: 2px solid var(--border);
-      border-radius: 6px;
+      width: 20px;
+      height: 20px;
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -447,260 +477,197 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       transition: all 0.2s ease;
       flex-shrink: 0;
       margin-top: 2px;
+      background: #fff;
     }
-
+    .custom-checkbox:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
     .custom-checkbox.checked {
       background: var(--gradient-primary);
       border-color: var(--primary-blue);
     }
+    .custom-checkbox i { color: #fff; font-size: 0.72rem; opacity: 0; }
+    .custom-checkbox.checked i { opacity: 1; }
 
-    .custom-checkbox i {
-      color: white;
-      font-size: 0.8rem;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
+    .checkbox-label { font-size: 0.86rem; color: var(--text-secondary); line-height: 1.5; }
+    .checkbox-label a { color: var(--primary-blue); font-weight: 600; text-decoration: none; }
+    .checkbox-label a:hover { text-decoration: underline; }
 
-    .custom-checkbox.checked i {
-      opacity: 1;
-    }
-
-    .checkbox-label {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-    }
-
-    .checkbox-label a {
-      color: var(--primary-blue);
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    .checkbox-label a:hover {
-      text-decoration: underline;
-    }
-
-    /* Buttons */
-    .btn {
+    .btn-primary {
       width: 100%;
-      padding: 1rem;
+      padding: 0.95rem;
       border: none;
-      border-radius: 14px;
-      font-size: 1rem;
-      font-weight: 600;
+      border-radius: 10px;
+      font-size: 0.98rem;
+      font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+      letter-spacing: 0.01em;
       cursor: pointer;
-      transition: all 0.3s ease;
-      text-decoration: none;
+      background: var(--gradient-primary);
+      color: #fff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      position: relative;
-      overflow: hidden;
+      gap: 0.55rem;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+      margin-bottom: 1.4rem;
+      box-shadow: 0 10px 20px -8px rgba(37, 99, 235, 0.5);
     }
+    .btn-primary:hover { background: var(--gradient-secondary); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:focus-visible { outline: 3px solid var(--primary-dark); outline-offset: 2px; }
 
-    .btn-primary {
-      background: var(--gradient-primary);
-      color: white;
-      box-shadow: var(--shadow-md);
-      margin-bottom: 1.5rem;
-    }
-
-    .btn-primary:hover {
-      background: var(--gradient-secondary);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .btn-primary:active {
-      transform: translateY(0);
-    }
-
-    .btn-primary::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s;
-    }
-
-    .btn-primary:hover::before {
-      left: 100%;
-    }
-
-    .btn-primary.loading {
-      pointer-events: none;
-      opacity: 0.7;
-    }
-
+    .btn-primary.loading { pointer-events: none; opacity: 0.75; }
     .btn-primary.loading::after {
       content: '';
-      width: 20px;
-      height: 20px;
-      border: 2px solid transparent;
-      border-top: 2px solid currentColor;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top: 2px solid #fff;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-left: 0.5rem;
+      animation: spin 0.8s linear infinite;
     }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Server Messages */
     .server-message {
-      padding: 1rem;
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
-      font-size: 0.9rem;
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1.4rem;
+      font-size: 0.87rem;
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      align-items: flex-start;
+      gap: 0.55rem;
     }
+    .server-message.error { background: var(--error-bg); color: #b91c1c; border-left: 3px solid var(--error); }
+    .server-message.success { background: var(--success-bg); color: #065f46; border-left: 3px solid var(--success); }
+    .server-message a { color: inherit; font-weight: 700; }
 
-    .server-message.error {
-      background: #fee2e2;
-      color: #b91c1c;
-      border-left: 4px solid #ef4444;
-    }
-
-    .server-message.success {
-      background: #d1fae5;
-      color: #065f46;
-      border-left: 4px solid #10b981;
-    }
-
-    /* Sign In Link */
     .signin-link {
       text-align: center;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       color: var(--text-secondary);
-      margin-top: -0.5rem;
     }
+    .signin-link a { color: var(--primary-blue); font-weight: 700; text-decoration: none; }
+    .signin-link a:hover { text-decoration: underline; }
 
-    .signin-link a {
-      color: var(--primary-blue);
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.2s ease;
-    }
+    /* ===================== Responsive ===================== */
 
-    .signin-link a:hover {
-      color: var(--primary-dark);
-      text-decoration: underline;
-    }
+    @media (max-width: 760px) {
+      .pass-card { flex-direction: column; border-radius: var(--radius); }
 
-    /* Divider (if needed) */
-    .divider {
-      display: flex;
-      align-items: center;
-      margin: 1.5rem 0;
-    }
+      .stub-panel {
+        flex: none;
+        border-radius: var(--radius) var(--radius) 0 0;
+        padding: 1.9rem 1.6rem 2.3rem;
+      }
 
-    .divider::before,
-    .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+      .stub-meta { grid-template-columns: 1fr 1fr 1fr; }
 
-    .divider span {
-      padding: 0 1rem;
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
+      .perforation {
+        flex: none;
+        height: 26px;
+      }
+      .perforation::before {
+        left: 0;
+        right: 0;
+        top: 50%;
+        bottom: auto;
+        width: auto;
+        height: 0;
+        border-left: none;
+        border-top: 2px dashed var(--border);
+      }
+      .perforation .notch {
+        top: 50%;
+        left: -15px;
+        transform: translateY(-50%);
+      }
+      .perforation .notch.bottom { left: auto; right: -15px; bottom: auto; }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      body {
-        padding: 1rem;
-      }
-      .form-section {
-        padding: 2rem 1.5rem;
-      }
-      .form-row {
-        flex-direction: column;
-        gap: 0;
-      }
-      .form-row .form-group {
-        margin-bottom: 1.5rem;
-      }
-      .header-section {
-        padding: 2rem 1.5rem;
-      }
-      .header-title {
-        font-size: 1.7rem;
-      }
+      .form-panel { padding: 2rem 1.5rem 1.75rem; }
     }
 
     @media (max-width: 480px) {
-      .register-container {
-        margin: 0;
-      }
-      .form-section {
-        padding: 1.5rem 1rem;
-      }
-      .header-section {
-        padding: 1.5rem;
-      }
+      body { padding: 1.25rem 0.75rem; }
+      .form-row { flex-direction: column; gap: 0; }
+      .stub-brand .name { font-size: 1.25rem; }
     }
   </style>
 </head>
 <body>
-  <!-- Animated Background -->
-  <div class="bg-decorations">
-    <div class="bg-shape"></div>
-    <div class="bg-shape"></div>
-    <div class="bg-shape"></div>
-  </div>
 
-  <div class="register-container">
-    <div class="register-card">
-      <!-- Header Section -->
-      <div class="header-section">
-        <div class="logo-container">
-          <div class="logo-inner">
-            <i class="fas fa-bus bus-logo"></i>
+  <div class="pass-shell">
+    <div class="pass-card">
+
+      <!-- Stub panel: brand + "journey" from sign up to on board -->
+      <div class="stub-panel">
+        <div>
+          <div class="stub-brand">
+            <span class="icon"><i class="fas fa-bus"></i></span>
+            <span class="name">SwiftPass</span>
+          </div>
+          <p class="stub-tagline">City-to-city bus travel</p>
+
+          <div class="route-strip">
+            <span class="route-point">SIGN UP</span>
+            <span class="route-track"><span class="route-bus"><i class="fas fa-bus"></i></span></span>
+            <span class="route-point">ON BOARD</span>
+          </div>
+
+          <div class="stub-barcode" aria-hidden="true"></div>
+        </div>
+
+        <div class="stub-meta">
+          <div>
+            <span class="meta-label">PASSENGER</span>
+            <span class="meta-value">NEW</span>
+          </div>
+          <div>
+            <span class="meta-label">TICKET NO</span>
+            <span class="meta-value" id="ticketNo">SP-000000</span>
+          </div>
+          <div>
+            <span class="meta-label">CLASS</span>
+            <span class="meta-value">STANDARD</span>
+          </div>
+          <div>
+            <span class="meta-label">STATUS</span>
+            <span class="meta-value">PENDING</span>
           </div>
         </div>
-        <h1 class="header-title">Create Your Account</h1>
-        <p class="header-subtitle">Join SwiftPass and start your journey</p>
       </div>
 
-      <!-- Form Section -->
-      <div class="form-section">
+      <!-- Perforated tear line -->
+      <div class="perforation" aria-hidden="true">
+        <span class="notch top"></span>
+        <span class="notch bottom"></span>
+      </div>
+
+      <!-- Form panel -->
+      <div class="form-panel">
+        <div class="form-heading">
+          <h1>Create your account</h1>
+          <p>A few details and you're ready to book your first trip.</p>
+        </div>
+
         <?php if (!empty($serverError)): ?>
           <div class="server-message error">
             <i class="fas fa-exclamation-circle"></i>
-            <?= htmlspecialchars($serverError) ?>
+            <span><?= htmlspecialchars($serverError) ?></span>
           </div>
         <?php endif; ?>
         <?php if (!empty($serverSuccess)): ?>
           <div class="server-message success">
             <i class="fas fa-check-circle"></i>
-            <?= htmlspecialchars($serverSuccess) ?>
+            <span><?= $serverSuccess /* server-generated, contains a trusted login link */ ?></span>
           </div>
         <?php endif; ?>
 
         <form method="POST" action="" novalidate id="registerForm">
-          <!-- Name Fields -->
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="firstName">
-                <i class="fas fa-user"></i> First Name
-              </label>
-              <input 
-                type="text" 
+              <label class="form-label" for="firstName"><i class="fas fa-user"></i> First Name</label>
+              <input
+                type="text"
                 id="firstName"
-                name="firstName"   
+                name="firstName"
                 class="form-input"
                 placeholder="Enter first name"
                 required
@@ -714,13 +681,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="lastName">
-                <i class="fas fa-user"></i> Last Name
-              </label>
-              <input 
-                type="text" 
+              <label class="form-label" for="lastName"><i class="fas fa-user"></i> Last Name</label>
+              <input
+                type="text"
                 id="lastName"
-                name="lastName"   
+                name="lastName"
                 class="form-input"
                 placeholder="Enter last name"
                 required
@@ -734,15 +699,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
           </div>
 
-          <!-- Email Field -->
           <div class="form-group">
-            <label class="form-label" for="email">
-              <i class="fas fa-envelope"></i> Email Address
-            </label>
-            <input 
-              type="email" 
+            <label class="form-label" for="email"><i class="fas fa-envelope"></i> Email Address</label>
+            <input
+              type="email"
               id="email"
-              name="email"  
+              name="email"
               class="form-input"
               placeholder="Enter your email"
               required
@@ -755,15 +717,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
           </div>
 
-          <!-- Phone Field -->
           <div class="form-group">
-            <label class="form-label" for="phone">
-              <i class="fas fa-phone"></i> Phone Number
-            </label>
-            <input 
-              type="tel" 
+            <label class="form-label" for="phone"><i class="fas fa-phone"></i> Phone Number</label>
+            <input
+              type="tel"
               id="phone"
-              name="contact"   
+              name="contact"
               class="form-input"
               placeholder="Enter phone number"
               required
@@ -776,52 +735,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
           </div>
 
-          <!-- Password Field -->
           <div class="form-group">
-            <label class="form-label" for="password">
-              <i class="fas fa-lock"></i> Password
-            </label>
+            <label class="form-label" for="password"><i class="fas fa-lock"></i> Password</label>
             <div class="password-container">
-              <input 
-                type="password" 
+              <input
+                type="password"
                 id="password"
-                name="password"   
+                name="password"
                 class="form-input password-input"
                 placeholder="Create a strong password"
                 required
                 autocomplete="new-password"
               >
-              <i class="fas fa-eye password-toggle" id="togglePassword"></i>
+              <i class="fas fa-eye password-toggle" id="togglePassword" role="button" tabindex="0" aria-label="Show password"></i>
             </div>
             <div class="password-strength" id="strengthMeter">
               <div class="strength-bar" id="strengthBar"></div>
             </div>
             <div class="strength-text" id="strengthText"></div>
-            <div class="password-requirements">
-              Use 8+ characters with a mix of letters, numbers & symbols
-            </div>
+            <div class="password-requirements">Use 8+ characters with a mix of letters, numbers &amp; symbols</div>
             <div class="error-message" id="passwordError">
               <i class="fas fa-exclamation-circle"></i>
               <span>Password must meet strength requirements</span>
             </div>
           </div>
 
-          <!-- Confirm Password Field -->
           <div class="form-group">
-            <label class="form-label" for="confirmPassword">
-              <i class="fas fa-lock"></i> Confirm Password
-            </label>
+            <label class="form-label" for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
             <div class="password-container">
-              <input 
-                type="password" 
+              <input
+                type="password"
                 id="confirmPassword"
-                name="confirmPassword"   
+                name="confirmPassword"
                 class="form-input password-input"
                 placeholder="Confirm your password"
                 required
                 autocomplete="new-password"
               >
-              <i class="fas fa-eye password-toggle" id="toggleConfirmPassword"></i>
+              <i class="fas fa-eye password-toggle" id="toggleConfirmPassword" role="button" tabindex="0" aria-label="Show password"></i>
             </div>
             <div class="error-message" id="confirmPasswordError">
               <i class="fas fa-exclamation-circle"></i>
@@ -833,35 +784,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
           </div>
 
-          <!-- Terms Checkbox -->
           <div class="checkbox-container">
-            <div class="custom-checkbox" id="termsCheckbox">
+            <div class="custom-checkbox" id="termsCheckbox" role="checkbox" aria-checked="false" tabindex="0">
               <i class="fas fa-check"></i>
             </div>
             <label class="checkbox-label">
-              I agree to SwiftPass <a href="#" target="_blank">Terms of Service</a> 
-              and <a href="#" target="_blank">Privacy Policy</a>
+              I agree to SwiftPass <a href="#" target="_blank">Terms of Service</a> and <a href="#" target="_blank">Privacy Policy</a>
             </label>
           </div>
 
-          <!-- Create Account Button -->
-          <button type="submit" class="btn btn-primary" id="createAccountBtn">
-            <i class="fas fa-user-plus"></i>
-            Create Account
+          <button type="submit" class="btn-primary" id="createAccountBtn">
+            <i class="fas fa-user-plus"></i> Create Account
           </button>
 
-          <!-- Sign In Link -->
           <div class="signin-link">
             Already have an account? <a href="login.php">Log in here</a>
           </div>
         </form>
       </div>
+
     </div>
   </div>
 
   <script>
-    // ========== PHP Validation & Duplicate Check ==========
-    // (Already handled on server side; this JS is for client‑side UX)
+    // Cosmetic ticket number, generated client-side for the boarding-pass stub
+    document.getElementById('ticketNo').textContent =
+      'SP-' + Math.floor(100000 + Math.random() * 900000);
 
     const form = document.getElementById('registerForm');
     const inputs = {
@@ -873,31 +821,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       confirmPassword: document.getElementById('confirmPassword')
     };
 
-    const toggles = {
-      password: document.getElementById('togglePassword'),
-      confirmPassword: document.getElementById('toggleConfirmPassword')
-    };
-
     const termsCheckbox = document.getElementById('termsCheckbox');
     const createAccountBtn = document.getElementById('createAccountBtn');
 
-    // ---------- Password Toggle ----------
+    // ---------- Password Toggle (mouse + keyboard) ----------
     function setupPasswordToggle(toggleId, inputId) {
       const toggle = document.getElementById(toggleId);
       const input = document.getElementById(inputId);
-      toggle.addEventListener('click', function() {
+      function flip() {
         const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
         input.setAttribute('type', type);
-        this.classList.toggle('fa-eye');
-        this.classList.toggle('fa-eye-slash');
+        toggle.classList.toggle('fa-eye');
+        toggle.classList.toggle('fa-eye-slash');
+        toggle.setAttribute('aria-label', type === 'password' ? 'Show password' : 'Hide password');
+      }
+      toggle.addEventListener('click', flip);
+      toggle.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); }
       });
     }
     setupPasswordToggle('togglePassword', 'password');
     setupPasswordToggle('toggleConfirmPassword', 'confirmPassword');
 
-    // ---------- Terms Checkbox ----------
-    termsCheckbox.addEventListener('click', function() {
-      this.classList.toggle('checked');
+    // ---------- Terms Checkbox (mouse + keyboard) ----------
+    function toggleTerms() {
+      const checked = termsCheckbox.classList.toggle('checked');
+      termsCheckbox.setAttribute('aria-checked', checked ? 'true' : 'false');
+    }
+    termsCheckbox.addEventListener('click', toggleTerms);
+    termsCheckbox.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTerms(); }
     });
 
     // ---------- Password Strength ----------
@@ -919,7 +872,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       const width = Math.min(100, (score / 5) * 100);
       strengthBar.style.width = width + '%';
       strengthBar.style.background = colors[Math.max(0, score - 1)] || colors[0];
-      strengthText.textContent = password.length > 0 ? labels[Math.max(0, score - 1)] || '' : '';
+      strengthText.textContent = password.length > 0 ? (labels[Math.max(0, score - 1)] || '') : '';
       strengthText.className = `strength-text ${classes[Math.max(0, score - 1)]}`;
       return score >= 3; // fair or better
     }
@@ -961,27 +914,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if (succDiv) succDiv.classList.remove('show');
     }
 
-    // ---------- Real‑time Validation ----------
-    inputs.firstName.addEventListener('blur', function() {
-      if (this.value.trim().length < 2) showError('firstName');
-      else showSuccess('firstName');
+    // ---------- Real-time Validation ----------
+    inputs.firstName.addEventListener('blur', function () {
+      if (this.value.trim().length < 2) showError('firstName'); else showSuccess('firstName');
     });
-    inputs.lastName.addEventListener('blur', function() {
-      if (this.value.trim().length < 2) showError('lastName');
-      else showSuccess('lastName');
+    inputs.lastName.addEventListener('blur', function () {
+      if (this.value.trim().length < 2) showError('lastName'); else showSuccess('lastName');
     });
-    inputs.email.addEventListener('blur', function() {
-      if (!validateEmail(this.value)) showError('email');
-      else showSuccess('email');
+    inputs.email.addEventListener('blur', function () {
+      if (!validateEmail(this.value)) showError('email'); else showSuccess('email');
     });
-    inputs.phone.addEventListener('blur', function() {
-      if (!validatePhone(this.value)) showError('phone');
-      else showSuccess('phone');
+    inputs.phone.addEventListener('blur', function () {
+      if (!validatePhone(this.value)) showError('phone'); else showSuccess('phone');
     });
-    inputs.password.addEventListener('input', function() {
+    inputs.password.addEventListener('input', function () {
       const strong = checkPasswordStrength(this.value);
-      if (this.value.length > 0 && strong) showSuccess('password');
-      else clearValidation('password');
+      if (this.value.length > 0 && strong) showSuccess('password'); else clearValidation('password');
       if (inputs.confirmPassword.value) validateConfirmPassword();
     });
     function validateConfirmPassword() {
@@ -996,64 +944,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     inputs.confirmPassword.addEventListener('blur', validateConfirmPassword);
 
-    // Clear errors on input
     Object.keys(inputs).forEach(key => {
       if (inputs[key]) {
-        inputs[key].addEventListener('input', function() {
-          clearValidation(key);
-        });
+        inputs[key].addEventListener('input', function () { clearValidation(key); });
       }
     });
 
     // ---------- Form Submission ----------
-    form.addEventListener('submit', function(e) {
-      // Client‑side checks before allowing submission
+    form.addEventListener('submit', function (e) {
       let isValid = true;
 
-      // First name
-      if (inputs.firstName.value.trim().length < 2) {
-        showError('firstName');
-        isValid = false;
-      }
-      // Last name
-      if (inputs.lastName.value.trim().length < 2) {
-        showError('lastName');
-        isValid = false;
-      }
-      // Email
-      if (!validateEmail(inputs.email.value)) {
-        showError('email');
-        isValid = false;
-      }
-      // Phone
-      if (!validatePhone(inputs.phone.value)) {
-        showError('phone');
-        isValid = false;
-      }
-      // Password strength
+      if (inputs.firstName.value.trim().length < 2) { showError('firstName'); isValid = false; }
+      if (inputs.lastName.value.trim().length < 2) { showError('lastName'); isValid = false; }
+      if (!validateEmail(inputs.email.value)) { showError('email'); isValid = false; }
+      if (!validatePhone(inputs.phone.value)) { showError('phone'); isValid = false; }
+
       const pwdStrong = checkPasswordStrength(inputs.password.value);
-      if (!pwdStrong) {
-        showError('password');
-        isValid = false;
-      }
-      // Confirm password
-      if (!validateConfirmPassword()) {
-        isValid = false;
-      }
-      // Terms checkbox
+      if (!pwdStrong) { showError('password'); isValid = false; }
+      if (!validateConfirmPassword()) { isValid = false; }
+
       if (!termsCheckbox.classList.contains('checked')) {
         alert('You must agree to the Terms of Service and Privacy Policy.');
         isValid = false;
       }
 
-      if (!isValid) {
-        e.preventDefault();
-        return;
-      }
+      if (!isValid) { e.preventDefault(); return; }
 
-      // Show loading state
       createAccountBtn.classList.add('loading');
-      // Form will submit normally; loading state will be reset by page reload if server returns.
     });
   </script>
 </body>
