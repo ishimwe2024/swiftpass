@@ -468,6 +468,9 @@ $performance_stats = $conn->query("
 
 $completion_rate = $performance_stats['total_trips'] > 0 ?
   round(($performance_stats['completed_trips'] / $performance_stats['total_trips']) * 100, 1) : 0;
+
+
+
 ?>
 
 <!DOCTYPE html>
@@ -569,7 +572,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       margin-right: 12px;
       width: 20px;
       text-align: center;
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
 
     /* Main Content */
@@ -1110,6 +1113,282 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       background: linear-gradient(135deg, var(--secondary), var(--primary));
       border-radius: 3px;
     }
+
+body {
+  font-size: 14px;
+}
+
+/* Sidebar */
+.sidebar-brand {
+  padding: 1.25rem 1.25rem;
+}
+
+.sidebar-brand h4 {
+  font-size: 1.1rem;
+}
+
+.sidebar-brand i {
+  font-size: 1.4rem;
+}
+
+.sidebar .nav-link {
+  padding: 0.75rem 1.25rem;
+  margin: 0.2rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.sidebar .nav-link i {
+  font-size: 0.9rem;
+}
+
+/* Main content */
+.main-content {
+  padding: 1.25rem;
+}
+
+/* Header */
+.header {
+  padding: 1.1rem 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.header h2 {
+  font-size: 1.4rem;
+}
+
+.header p {
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+}
+
+.user-avatar {
+  width: 42px;
+  height: 42px;
+  font-size: 1rem;
+  border-width: 2px;
+}
+
+/* Statistic cards */
+.stat-card {
+  padding: 1.25rem;
+}
+
+.stat-card h5 {
+  font-size: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.stat-card .number {
+  font-size: 2rem;
+}
+
+.stat-card .trend {
+  font-size: 0.75rem;
+}
+
+/* Tables */
+.table-container {
+  padding: 1.25rem;
+  margin-top: 1.25rem;
+}
+
+.table-container h4 {
+  font-size: 1.15rem;
+  margin-bottom: 1rem;
+}
+
+.table-container h5 {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.table thead th {
+  padding: 0.8rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.table tbody td {
+  padding: 0.8rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+/* Badges */
+.badge {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.7rem;
+}
+
+.status-badge {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.7rem;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-success {
+  padding: 0.55rem 1.25rem;
+  font-size: 0.85rem;
+}
+
+.btn {
+  font-size: 0.85rem;
+}
+
+/* Bus/stat cards */
+.stats-card {
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.stat-number {
+  font-size: 1.6rem;
+}
+
+/* Filter section */
+.filter-section {
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.search-box input {
+  font-size: 0.85rem;
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+.filter-buttons .btn {
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+}
+
+/* Auto update indicator */
+.auto-update-indicator {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.7rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Settings */
+.settings-card {
+  padding: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.settings-card .card-header {
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.settings-card .card-header h5 {
+  font-size: 1rem;
+}
+
+.settings-card .form-label {
+  font-size: 0.85rem;
+}
+
+.settings-card .form-control,
+.settings-card .form-select {
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* No data */
+.no-data {
+  padding: 2rem;
+  font-size: 0.85rem;
+}
+
+.no-data i {
+  font-size: 2.25rem;
+}
+
+/* Action buttons */
+.action-buttons {
+  gap: 0.35rem;
+}
+
+/* Bus cards */
+.bus-card {
+  font-size: 0.85rem;
+}
+
+/* Seats indicator */
+.seats-indicator {
+  height: 6px;
+}
+
+/* Headings inside dashboard sections */
+.dashboard-section h1 {
+  font-size: 1.6rem;
+}
+
+.dashboard-section h2 {
+  font-size: 1.4rem;
+}
+
+.dashboard-section h3 {
+  font-size: 1.2rem;
+}
+
+.dashboard-section h4 {
+  font-size: 1.05rem;
+}
+
+.dashboard-section h5 {
+  font-size: 0.95rem;
+}
+
+.dashboard-section h6 {
+  font-size: 0.85rem;
+}
+
+/* Form elements globally */
+.form-control,
+.form-select {
+  font-size: 0.85rem;
+}
+
+.form-label {
+  font-size: 0.85rem;
+}
+
+/* Keep mobile compact as well */
+@media (max-width: 768px) {
+  body {
+    font-size: 13px;
+  }
+
+  .main-content {
+    padding: 0.75rem;
+  }
+
+  .header {
+    padding: 0.85rem;
+  }
+
+  .header h2 {
+    font-size: 1.2rem;
+  }
+
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-card .number {
+    font-size: 1.7rem;
+  }
+
+  .table-container {
+    padding: 1rem;
+  }
+
+  .table thead th,
+  .table tbody td {
+    padding: 0.65rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
   </style>
 </head>
 
@@ -2065,7 +2344,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
         <div class="d-flex justify-content-between align-items-center mb-4">
           <h4 class="mb-0"><i class="fas fa-user-cog me-2"></i>User Management</h4>
           <div>
-            <a href="register.php" class="btn btn-success">
+            <a href="admin_register_user.php" class="btn btn-success">
               <i class="fas fa-plus me-2"></i>Add New User
             </a>
           </div>

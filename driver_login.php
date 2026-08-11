@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['driver_license'] = $driver['license'];
             $_SESSION['user_role'] = 'driver';
             
-            header("Location: driver_dashboard.php");
+            header("Location: drivers_dashboard.php");
             exit();
         } else {
             $error_message = "Invalid password!";
