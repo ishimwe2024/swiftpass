@@ -1,5 +1,79 @@
+<?php
+// This block must be placed at the very top of the file, BEFORE any HTML output.
+include('connection.php');
 
+$serverError = '';
+$serverSuccess = '';
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $first   = trim($_POST['firstName'] ?? '');
+    $last    = trim($_POST['lastName'] ?? '');
+    $email   = trim($_POST['email'] ?? '');
+    $phone   = trim($_POST['contact'] ?? '');
+    $pass    = trim($_POST['password'] ?? '');
+    $confirm = trim($_POST['confirmPassword'] ?? '');
+
+    // 1. Password match check
+    if ($pass !== $confirm) {
+        $serverError = "❌ Passwords do not match.";
+    }
+
+    // 2. Check for duplicate email
+    if (empty($serverError)) {
+        $checkEmail = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        if ($checkEmail) {
+            $checkEmail->bind_param("s", $email);
+            $checkEmail->execute();
+            $checkEmail->store_result();
+            if ($checkEmail->num_rows > 0) {
+                $serverError = "❌ This email address is already registered.";
+            }
+            $checkEmail->close();
+        } else {
+            $serverError = "❌ Database error (email check).";
+        }
+    }
+
+    // 3. Check for duplicate phone number
+    if (empty($serverError)) {
+        $checkPhone = $conn->prepare("SELECT id FROM users WHERE contact = ?");
+        if ($checkPhone) {
+            $checkPhone->bind_param("s", $phone);
+            $checkPhone->execute();
+            $checkPhone->store_result();
+            if ($checkPhone->num_rows > 0) {
+                $serverError = "❌ This phone number is already registered.";
+            }
+            $checkPhone->close();
+        } else {
+            $serverError = "❌ Database error (phone check).";
+        }
+    }
+
+    // 4. Insert new user
+    if (empty($serverError)) {
+        $passwordToStore = password_hash($pass, PASSWORD_DEFAULT);
+        $role = 'passenger';
+
+        $stmt = $conn->prepare("INSERT INTO users (firstname, lastname, email, contact, password, role) VALUES (?, ?, ?, ?, ?, ?)");
+        if ($stmt) {
+            $stmt->bind_param("ssssss", $first, $last, $email, $phone, $passwordToStore, $role);
+            if ($stmt->execute()) {
+                $serverSuccess = "✅ Registration successful! You can now <a href='login.php'>log in</a>.";
+                // Clear POST to avoid repopulating fields after success (optional)
+                $_POST = [];
+            } else {
+                $serverError = "❌ Registration failed: " . $stmt->error;
+            }
+            $stmt->close();
+        } else {
+            $serverError = "❌ System error: " . $conn->error;
+        }
+    }
+
+    $conn->close();
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,12 +106,12 @@
       --error: #ef4444;
       --gradient-primary: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-dark) 100%);
       --gradient-secondary: linear-gradient(135deg, var(--secondary-blue) 0%, var(--accent-cyan) 100%);
-      --gradient-bg: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      --gradient-bg: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 50%, #e0f2fe 100%);
       --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
       --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-      --border-radius: 16px;
+      --border-radius: 20px;
     }
 
     body {
@@ -108,7 +182,7 @@
     /* Main Container */
     .register-container {
       width: 100%;
-      max-width: 520px;
+      max-width: 580px;
       position: relative;
       z-index: 2;
     }
@@ -129,7 +203,7 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 4px;
+      height: 6px;
       background: var(--gradient-primary);
     }
 
@@ -138,7 +212,7 @@
       background: var(--gradient-primary);
       color: white;
       text-align: center;
-      padding: 2rem;
+      padding: 2.5rem 2rem 2rem;
       position: relative;
       overflow: hidden;
     }
@@ -148,8 +222,8 @@
       position: absolute;
       top: -50%;
       right: -20%;
-      width: 150px;
-      height: 150px;
+      width: 200px;
+      height: 200px;
       background: rgba(255, 255, 255, 0.1);
       border-radius: 50%;
       transform: rotate(45deg);
@@ -158,26 +232,26 @@
     .logo-container {
       display: inline-block;
       position: relative;
-      padding: 3px;
+      padding: 4px;
       background: rgba(255, 255, 255, 0.2);
       border-radius: 50%;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
       z-index: 2;
     }
 
     .logo-inner {
       background: var(--surface);
       border-radius: 50%;
-      padding: 1rem;
+      padding: 1.2rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 70px;
-      height: 70px;
+      width: 80px;
+      height: 80px;
     }
 
     .bus-logo {
-      font-size: 1.8rem;
+      font-size: 2rem;
       background: var(--gradient-primary);
       -webkit-background-clip: text;
       background-clip: text;
@@ -185,16 +259,17 @@
     }
 
     .header-title {
-      font-size: 1.75rem;
+      font-size: 2rem;
       font-weight: 700;
       margin-bottom: 0.5rem;
       position: relative;
       z-index: 2;
+      letter-spacing: -0.5px;
     }
 
     .header-subtitle {
       opacity: 0.9;
-      font-size: 1rem;
+      font-size: 1.05rem;
       position: relative;
       z-index: 2;
     }
@@ -209,29 +284,20 @@
       position: relative;
     }
 
-    .form-group.half {
-      width: calc(50% - 0.5rem);
-      display: inline-block;
-    }
-
-    .form-group.half:first-child {
-      margin-right: 1rem;
-    }
-
     .form-row {
       display: flex;
       gap: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 0;
     }
 
     .form-row .form-group {
       flex: 1;
-      margin-bottom: 0;
+      margin-bottom: 1.5rem;
     }
 
     .form-label {
       display: block;
-      font-size: 0.875rem;
+      font-size: 0.9rem;
       font-weight: 600;
       color: var(--text-primary);
       margin-bottom: 0.5rem;
@@ -239,9 +305,9 @@
 
     .form-input {
       width: 100%;
-      padding: 0.875rem 1rem;
+      padding: 0.9rem 1rem;
       border: 2px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 1rem;
       transition: all 0.3s ease;
       background: var(--surface);
@@ -251,7 +317,7 @@
     .form-input:focus {
       outline: none;
       border-color: var(--border-focus);
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
       transform: translateY(-1px);
     }
 
@@ -259,7 +325,48 @@
       color: var(--text-light);
     }
 
-    /* Password Fields */
+    .form-input.error {
+      border-color: var(--error);
+      animation: shake 0.3s ease-in-out;
+    }
+
+    .form-input.success {
+      border-color: var(--success);
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    .error-message {
+      color: var(--error);
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      display: none;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .error-message.show {
+      display: flex;
+    }
+
+    .success-message {
+      color: var(--success);
+      font-size: 0.8rem;
+      margin-top: 0.4rem;
+      display: none;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .success-message.show {
+      display: flex;
+    }
+
+    /* Password Container */
     .password-container {
       position: relative;
     }
@@ -284,12 +391,12 @@
       padding-right: 3rem;
     }
 
-    /* Password Strength Meter */
+    /* Password Strength */
     .password-strength {
-      height: 4px;
+      height: 5px;
       background: var(--border);
-      margin-top: 0.5rem;
-      border-radius: 2px;
+      margin-top: 0.6rem;
+      border-radius: 3px;
       overflow: hidden;
       transition: all 0.3s ease;
     }
@@ -299,12 +406,12 @@
       width: 0%;
       background: var(--error);
       transition: all 0.3s ease;
-      border-radius: 2px;
+      border-radius: 3px;
     }
 
     .strength-text {
       font-size: 0.75rem;
-      margin-top: 0.25rem;
+      margin-top: 0.3rem;
       font-weight: 500;
     }
 
@@ -325,14 +432,14 @@
       display: flex;
       align-items: flex-start;
       gap: 0.75rem;
-      margin-bottom: 2rem;
+      margin: 1.5rem 0 2rem;
     }
 
     .custom-checkbox {
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
       border: 2px solid var(--border);
-      border-radius: 4px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -349,7 +456,7 @@
 
     .custom-checkbox i {
       color: white;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       opacity: 0;
       transition: opacity 0.2s ease;
     }
@@ -361,7 +468,7 @@
     .checkbox-label {
       font-size: 0.9rem;
       color: var(--text-secondary);
-      line-height: 1.4;
+      line-height: 1.5;
     }
 
     .checkbox-label a {
@@ -379,7 +486,7 @@
       width: 100%;
       padding: 1rem;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
@@ -425,25 +532,71 @@
       left: 100%;
     }
 
-    .btn-google {
-      background: var(--surface);
-      color: var(--text-primary);
-      border: 2px solid var(--border);
-      margin-bottom: 2rem;
+    .btn-primary.loading {
+      pointer-events: none;
+      opacity: 0.7;
     }
 
-    .btn-google:hover {
-      border-color: var(--primary-blue);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
-    }
-
-    .google-icon {
+    .btn-primary.loading::after {
+      content: '';
       width: 20px;
       height: 20px;
+      border: 2px solid transparent;
+      border-top: 2px solid currentColor;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-left: 0.5rem;
     }
 
-    /* Divider */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Server Messages */
+    .server-message {
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .server-message.error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-left: 4px solid #ef4444;
+    }
+
+    .server-message.success {
+      background: #d1fae5;
+      color: #065f46;
+      border-left: 4px solid #10b981;
+    }
+
+    /* Sign In Link */
+    .signin-link {
+      text-align: center;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      margin-top: -0.5rem;
+    }
+
+    .signin-link a {
+      color: var(--primary-blue);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s ease;
+    }
+
+    .signin-link a:hover {
+      color: var(--primary-dark);
+      text-decoration: underline;
+    }
+
+    /* Divider (if needed) */
     .divider {
       display: flex;
       align-items: center;
@@ -465,118 +618,26 @@
       font-weight: 500;
     }
 
-    /* Sign In Link */
-    .signin-link {
-      text-align: center;
-      font-size: 0.95rem;
-      color: var(--text-secondary);
-    }
-
-    .signin-link a {
-      color: var(--primary-blue);
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.2s ease;
-    }
-
-    .signin-link a:hover {
-      color: var(--primary-dark);
-      text-decoration: underline;
-    }
-
-    /* Form Validation */
-    .form-input.error {
-      border-color: var(--error);
-      animation: shake 0.3s ease-in-out;
-    }
-
-    .form-input.success {
-      border-color: var(--success);
-    }
-
-    .form-input.warning {
-      border-color: var(--warning);
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      75% { transform: translateX(5px); }
-    }
-
-    .error-message {
-      color: var(--error);
-      font-size: 0.8rem;
-      margin-top: 0.5rem;
-      display: none;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .error-message.show {
-      display: flex;
-    }
-
-    .success-message {
-      color: var(--success);
-      font-size: 0.8rem;
-      margin-top: 0.5rem;
-      display: none;
-      align-items: center;
-      gap: 0.25rem;
-    }
-
-    .success-message.show {
-      display: flex;
-    }
-
-    /* Loading State */
-    .btn.loading {
-      pointer-events: none;
-      opacity: 0.7;
-    }
-
-    .btn.loading::after {
-      content: '';
-      width: 20px;
-      height: 20px;
-      border: 2px solid transparent;
-      border-top: 2px solid currentColor;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-left: 0.5rem;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Responsive Design */
+    /* Responsive */
     @media (max-width: 768px) {
       body {
         padding: 1rem;
       }
-
       .form-section {
         padding: 2rem 1.5rem;
       }
-
       .form-row {
         flex-direction: column;
         gap: 0;
       }
-
       .form-row .form-group {
         margin-bottom: 1.5rem;
       }
-
       .header-section {
-        padding: 1.5rem;
+        padding: 2rem 1.5rem;
       }
-
       .header-title {
-        font-size: 1.5rem;
+        font-size: 1.7rem;
       }
     }
 
@@ -584,13 +645,11 @@
       .register-container {
         margin: 0;
       }
-
       .form-section {
         padding: 1.5rem 1rem;
       }
-
       .header-section {
-        padding: 1.25rem;
+        padding: 1.5rem;
       }
     }
   </style>
@@ -618,12 +677,24 @@
 
       <!-- Form Section -->
       <div class="form-section">
-        <form method="POST" action="" novalidate>
+        <?php if (!empty($serverError)): ?>
+          <div class="server-message error">
+            <i class="fas fa-exclamation-circle"></i>
+            <?= htmlspecialchars($serverError) ?>
+          </div>
+        <?php endif; ?>
+        <?php if (!empty($serverSuccess)): ?>
+          <div class="server-message success">
+            <i class="fas fa-check-circle"></i>
+            <?= htmlspecialchars($serverSuccess) ?>
+          </div>
+        <?php endif; ?>
 
+        <form method="POST" action="" novalidate id="registerForm">
           <!-- Name Fields -->
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" name="firstName">
+              <label class="form-label" for="firstName">
                 <i class="fas fa-user"></i> First Name
               </label>
               <input 
@@ -634,35 +705,37 @@
                 placeholder="Enter first name"
                 required
                 autocomplete="given-name"
+                value="<?= isset($_POST['firstName']) ? htmlspecialchars($_POST['firstName']) : '' ?>"
               >
               <div class="error-message" id="firstNameError">
                 <i class="fas fa-exclamation-circle"></i>
-                <span>First name is required</span>
+                <span>First name must be at least 2 characters</span>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label" name="lastName">
+              <label class="form-label" for="lastName">
                 <i class="fas fa-user"></i> Last Name
               </label>
               <input 
                 type="text" 
                 id="lastName"
-                 name="lastName"   
+                name="lastName"   
                 class="form-input"
                 placeholder="Enter last name"
                 required
                 autocomplete="family-name"
+                value="<?= isset($_POST['lastName']) ? htmlspecialchars($_POST['lastName']) : '' ?>"
               >
               <div class="error-message" id="lastNameError">
                 <i class="fas fa-exclamation-circle"></i>
-                <span>Last name is required</span>
+                <span>Last name must be at least 2 characters</span>
               </div>
             </div>
           </div>
 
           <!-- Email Field -->
-      <div class="form-group">
+          <div class="form-group">
             <label class="form-label" for="email">
               <i class="fas fa-envelope"></i> Email Address
             </label>
@@ -674,14 +747,17 @@
               placeholder="Enter your email"
               required
               autocomplete="email"
+              value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>"
             >
             <div class="error-message" id="emailError">
               <i class="fas fa-exclamation-circle"></i>
               <span>Please enter a valid email address</span>
-  </div>
+            </div>
+          </div>
+
           <!-- Phone Field -->
           <div class="form-group">
-            <label class="form-label" name="contact">
+            <label class="form-label" for="phone">
               <i class="fas fa-phone"></i> Phone Number
             </label>
             <input 
@@ -692,16 +768,17 @@
               placeholder="Enter phone number"
               required
               autocomplete="tel"
+              value="<?= isset($_POST['contact']) ? htmlspecialchars($_POST['contact']) : '' ?>"
             >
             <div class="error-message" id="phoneError">
               <i class="fas fa-exclamation-circle"></i>
-              <span>Please enter a valid phone number</span>
+              <span>Please enter a valid phone number (10+ digits)</span>
             </div>
           </div>
 
           <!-- Password Field -->
           <div class="form-group">
-            <label class="form-label" name="password">
+            <label class="form-label" for="password">
               <i class="fas fa-lock"></i> Password
             </label>
             <div class="password-container">
@@ -725,13 +802,13 @@
             </div>
             <div class="error-message" id="passwordError">
               <i class="fas fa-exclamation-circle"></i>
-              <span>Password must meet requirements</span>
+              <span>Password must meet strength requirements</span>
             </div>
           </div>
 
           <!-- Confirm Password Field -->
           <div class="form-group">
-            <label class="form-label" name="confirmPassword">
+            <label class="form-label" for="confirmPassword">
               <i class="fas fa-lock"></i> Confirm Password
             </label>
             <div class="password-container">
@@ -761,7 +838,7 @@
             <div class="custom-checkbox" id="termsCheckbox">
               <i class="fas fa-check"></i>
             </div>
-            <label class="checkbox-label" for="terms">
+            <label class="checkbox-label">
               I agree to SwiftPass <a href="#" target="_blank">Terms of Service</a> 
               and <a href="#" target="_blank">Privacy Policy</a>
             </label>
@@ -772,234 +849,144 @@
             <i class="fas fa-user-plus"></i>
             Create Account
           </button>
-<a href="login.php" class="bottom-link">login here</a>
-    </div>
-         </form>
-   <?php
-include('connection.php');
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $first   = trim($_POST['firstName'] ?? '');
-    $last    = trim($_POST['lastName'] ?? '');
-    $email   = trim($_POST['email'] ?? '');
-    $phone   = trim($_POST['contact'] ?? '');
-    $pass    = trim($_POST['password'] ?? '');
-    $confirm = trim($_POST['confirmPassword'] ?? '');
-
-    // Password match check
-    if ($pass !== $confirm) {
-        die("❌ Passwords do not match.");
-    }
-
-    // Check if email already exists
-    $check = $conn->prepare("SELECT id FROM users WHERE email = ?");
-    $check->bind_param("s", $email);
-    $check->execute();
-    $check->store_result();
-    if ($check->num_rows > 0) {
-        die("❌ Email already registered.");
-    }
-    $check->close();
-
-    // Securely hash the password before saving
-    $passwordToStore = password_hash($pass, PASSWORD_DEFAULT);
-
-    // Default role
-    $role = 'passenger';
-
-    // Insert into database
-    $sql = "INSERT INTO users (firstname, lastname, email, contact, password, role) VALUES (?, ?, ?, ?, ?, ?)";
-    $stmt = $conn->prepare($sql);
-    if (!$stmt) die("Prepare failed: " . $conn->error);
-
-    $stmt->bind_param("ssssss", $first, $last, $email, $phone, $passwordToStore, $role);
-
-    if ($stmt->execute()) {
-        echo "✅ Registration successful!";
-    } else {
-        echo "❌ Error: " . $stmt->error;
-    }
-
-    $stmt->close();
-    $conn->close();
-}
-?>
-
+          <!-- Sign In Link -->
+          <div class="signin-link">
+            Already have an account? <a href="login.php">Log in here</a>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 
   <script>
-    // DOM Elements
+    // ========== PHP Validation & Duplicate Check ==========
+    // (Already handled on server side; this JS is for client‑side UX)
+
     const form = document.getElementById('registerForm');
     const inputs = {
       firstName: document.getElementById('firstName'),
       lastName: document.getElementById('lastName'),
       email: document.getElementById('email'),
-      contact: document.getElementById('contact'),
+      phone: document.getElementById('phone'),    // name="contact"
       password: document.getElementById('password'),
       confirmPassword: document.getElementById('confirmPassword')
     };
-    
+
     const toggles = {
       password: document.getElementById('togglePassword'),
       confirmPassword: document.getElementById('toggleConfirmPassword')
     };
-    
+
     const termsCheckbox = document.getElementById('termsCheckbox');
     const createAccountBtn = document.getElementById('createAccountBtn');
-    const googleSignUpBtn = document.getElementById('googleSignUpBtn');
 
-    // Password Toggle Functions
+    // ---------- Password Toggle ----------
     function setupPasswordToggle(toggleId, inputId) {
       const toggle = document.getElementById(toggleId);
       const input = document.getElementById(inputId);
-      
       toggle.addEventListener('click', function() {
         const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
         input.setAttribute('type', type);
-        
         this.classList.toggle('fa-eye');
         this.classList.toggle('fa-eye-slash');
       });
     }
-
     setupPasswordToggle('togglePassword', 'password');
     setupPasswordToggle('toggleConfirmPassword', 'confirmPassword');
 
-    // Terms Checkbox
+    // ---------- Terms Checkbox ----------
     termsCheckbox.addEventListener('click', function() {
       this.classList.toggle('checked');
     });
 
-    // Password Strength Checker
+    // ---------- Password Strength ----------
     function checkPasswordStrength(password) {
       const strengthBar = document.getElementById('strengthBar');
       const strengthText = document.getElementById('strengthText');
-      
       let score = 0;
-      let feedback = '';
-      
-      // Length check
-      if (password.length >= 8) score += 1;
-      else feedback = 'Too short';
-      
-      // Character variety checks
-      if (password.match(/[a-z]/)) score += 1;
-      if (password.match(/[A-Z]/)) score += 1;
-      if (password.match(/[0-9]/)) score += 1;
-      if (password.match(/[^a-zA-Z0-9]/)) score += 1;
-      
-      // Update strength bar and text
-      const colors = ['#ef4444', '#f59e0b', '#10b981', '#10b981', '#10b981'];
+
+      if (password.length >= 8) score++;
+      if (password.match(/[a-z]/)) score++;
+      if (password.match(/[A-Z]/)) score++;
+      if (password.match(/[0-9]/)) score++;
+      if (password.match(/[^a-zA-Z0-9]/)) score++;
+
+      const colors = ['#ef4444', '#ef4444', '#f59e0b', '#10b981', '#10b981'];
       const labels = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
       const classes = ['strength-weak', 'strength-weak', 'strength-fair', 'strength-good', 'strength-strong'];
-      
-      const width = Math.max(0, (score / 5) * 100);
+
+      const width = Math.min(100, (score / 5) * 100);
       strengthBar.style.width = width + '%';
-      strengthBar.style.background = colors[Math.max(0, score - 1)];
-      
-      strengthText.textContent = password.length > 0 ? labels[Math.max(0, score - 1)] : '';
+      strengthBar.style.background = colors[Math.max(0, score - 1)] || colors[0];
+      strengthText.textContent = password.length > 0 ? labels[Math.max(0, score - 1)] || '' : '';
       strengthText.className = `strength-text ${classes[Math.max(0, score - 1)]}`;
-      
-      return score >= 3;
+      return score >= 3; // fair or better
     }
 
-    // Validation Functions
+    // ---------- Validation Helpers ----------
     function validateEmail(email) {
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return re.test(email);
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
-
     function validatePhone(contact) {
-      const re = /^[\+]?[\d\s\-\(\)]{10,}$/;
-      return re.test(contact.replace(/\s/g, ''));
+      return /^[\+]?[\d\s\-\(\)]{10,}$/.test(contact.replace(/\s/g, ''));
     }
-
-    function showError(inputId, message) {
+    function showError(inputId) {
       const input = inputs[inputId];
-      const errorDiv = document.getElementById(inputId + 'Error');
-      const successDiv = document.getElementById(inputId + 'Success');
-      
+      if (!input) return;
+      const errDiv = document.getElementById(inputId + 'Error');
+      const succDiv = document.getElementById(inputId + 'Success');
       input.classList.add('error');
       input.classList.remove('success');
-      errorDiv.classList.add('show');
-      if (successDiv) successDiv.classList.remove('show');
+      if (errDiv) errDiv.classList.add('show');
+      if (succDiv) succDiv.classList.remove('show');
     }
-
-    function showSuccess(inputId, message = '') {
+    function showSuccess(inputId) {
       const input = inputs[inputId];
-      const errorDiv = document.getElementById(inputId + 'Error');
-      const successDiv = document.getElementById(inputId + 'Success');
-      
+      if (!input) return;
+      const errDiv = document.getElementById(inputId + 'Error');
+      const succDiv = document.getElementById(inputId + 'Success');
       input.classList.add('success');
       input.classList.remove('error');
-      errorDiv.classList.remove('show');
-      if (successDiv) successDiv.classList.add('show');
+      if (errDiv) errDiv.classList.remove('show');
+      if (succDiv) succDiv.classList.add('show');
     }
-
     function clearValidation(inputId) {
       const input = inputs[inputId];
-      const errorDiv = document.getElementById(inputId + 'Error');
-      const successDiv = document.getElementById(inputId + 'Success');
-      
+      if (!input) return;
+      const errDiv = document.getElementById(inputId + 'Error');
+      const succDiv = document.getElementById(inputId + 'Success');
       input.classList.remove('error', 'success');
-      errorDiv.classList.remove('show');
-      if (successDiv) successDiv.classList.remove('show');
+      if (errDiv) errDiv.classList.remove('show');
+      if (succDiv) succDiv.classList.remove('show');
     }
 
-    // Real-time Validation
+    // ---------- Real‑time Validation ----------
     inputs.firstName.addEventListener('blur', function() {
-      if (this.value.trim().length < 2) {
-        showError('firstName', 'First name must be at least 2 characters');
-      } else {
-        showSuccess('firstName');
-      }
+      if (this.value.trim().length < 2) showError('firstName');
+      else showSuccess('firstName');
     });
-
     inputs.lastName.addEventListener('blur', function() {
-      if (this.value.trim().length < 2) {
-        showError('lastName', 'Last name must be at least 2 characters');
-      } else {
-        showSuccess('lastName');
-      }
+      if (this.value.trim().length < 2) showError('lastName');
+      else showSuccess('lastName');
     });
-
     inputs.email.addEventListener('blur', function() {
-      if (!validateEmail(this.value)) {
-        showError('email', 'Please enter a valid email address');
-      } else {
-        showSuccess('email');
-      }
+      if (!validateEmail(this.value)) showError('email');
+      else showSuccess('email');
     });
-
     inputs.phone.addEventListener('blur', function() {
-      if (!validatePhone(this.value)) {
-        showError('contact', 'Please enter a valid phone number');
-      } else {
-        showSuccess('contact');
-      }
+      if (!validatePhone(this.value)) showError('phone');
+      else showSuccess('phone');
     });
-
     inputs.password.addEventListener('input', function() {
-      const isStrong = checkPasswordStrength(this.value);
-      if (this.value.length > 0) {
-        if (isStrong) {
-          showSuccess('password');
-        } else {
-          clearValidation('password');
-        }
-      }
-      
-      // Check confirm password if it has value
-      if (inputs.confirmPassword.value) {
-        validateConfirmPassword();
-      }
+      const strong = checkPasswordStrength(this.value);
+      if (this.value.length > 0 && strong) showSuccess('password');
+      else clearValidation('password');
+      if (inputs.confirmPassword.value) validateConfirmPassword();
     });
-
     function validateConfirmPassword() {
       if (inputs.confirmPassword.value !== inputs.password.value) {
-        showError('confirmPassword', 'Passwords do not match');
+        showError('confirmPassword');
         return false;
       } else if (inputs.confirmPassword.value.length > 0) {
         showSuccess('confirmPassword');
@@ -1007,12 +994,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
       return false;
     }
-
     inputs.confirmPassword.addEventListener('blur', validateConfirmPassword);
 
-    // Clear validation on input
+    // Clear errors on input
     Object.keys(inputs).forEach(key => {
-      inputs[key].addEventListener('input', function() {
-        clearValidation(key);
-      });
+      if (inputs[key]) {
+        inputs[key].addEventListener('input', function() {
+          clearValidation(key);
+        });
+      }
     });
+
+    // ---------- Form Submission ----------
+    form.addEventListener('submit', function(e) {
+      // Client‑side checks before allowing submission
+      let isValid = true;
+
+      // First name
+      if (inputs.firstName.value.trim().length < 2) {
+        showError('firstName');
+        isValid = false;
+      }
+      // Last name
+      if (inputs.lastName.value.trim().length < 2) {
+        showError('lastName');
+        isValid = false;
+      }
+      // Email
+      if (!validateEmail(inputs.email.value)) {
+        showError('email');
+        isValid = false;
+      }
+      // Phone
+      if (!validatePhone(inputs.phone.value)) {
+        showError('phone');
+        isValid = false;
+      }
+      // Password strength
+      const pwdStrong = checkPasswordStrength(inputs.password.value);
+      if (!pwdStrong) {
+        showError('password');
+        isValid = false;
+      }
+      // Confirm password
+      if (!validateConfirmPassword()) {
+        isValid = false;
+      }
+      // Terms checkbox
+      if (!termsCheckbox.classList.contains('checked')) {
+        alert('You must agree to the Terms of Service and Privacy Policy.');
+        isValid = false;
+      }
+
+      if (!isValid) {
+        e.preventDefault();
+        return;
+      }
+
+      // Show loading state
+      createAccountBtn.classList.add('loading');
+      // Form will submit normally; loading state will be reset by page reload if server returns.
+    });
+  </script>
+</body>
+</html>
