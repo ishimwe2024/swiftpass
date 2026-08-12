@@ -180,12 +180,6 @@ $all_customers = $conn->query("SELECT * FROM customers ORDER BY created_at DESC 
             <span>Manage Users</span>
           </a>
         </li>
-        <li class="nav-item">
-          <a href="settings.php" class="nav-link">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
-          </a>
-        </li>
       </ul>
     </div>
   </div>

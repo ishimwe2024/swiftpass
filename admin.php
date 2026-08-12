@@ -1472,12 +1472,7 @@ body {
             <span>Reports</span>
           </a>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link" data-section="settings">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
-          </a>
-        </li>
+       
       </ul>
     </div>
   </div>
@@ -2405,17 +2400,41 @@ body {
                     </td>
                     <td>
                       <div class="action-buttons">
-                        <a href="register.php" class="btn btn-sm btn-outline-primary">
-                          <i class="fas fa-edit"></i>
-                        </a>
-                        <?php if ((int) $user['id'] !== (int) $userId): ?>
-                          <a href="admin.php?section=manage-users&delete_user=<?php echo $user['id']; ?>"
-                            class="btn btn-sm btn-outline-danger"
-                            onclick="return confirm('Are you sure you want to delete this user?')">
-                            <i class="fas fa-trash"></i>
-                          </a>
-                        <?php endif; ?>
-                      </div>
+
+    <!-- Edit -->
+    <a href="update_users.php?id=<?= (int)$user['id']; ?>"
+       class="btn btn-sm btn-outline-primary"
+       title="Edit User">
+        <i class="fas fa-edit"></i>
+    </a>
+<!-- Activate / Deactivate -->
+<?php if ((int)$user['id'] !== (int)$userId): ?>
+
+    <?php if ($user['status'] === 'active'): ?>
+
+        <!-- Currently Active - Click to Deactivate -->
+        <a href="toggle_user_status.php?id=<?= (int)$user['id']; ?>&status=inactive"
+           class="btn btn-sm btn-outline-success"
+           title="Active - Click to Deactivate"
+           onclick="return confirm('Are you sure you want to deactivate this user?');">
+            <i class="fas fa-user-check"></i>
+        </a>
+
+    <?php else: ?>
+
+        <!-- Currently Inactive - Click to Activate -->
+        <a href="toggle_user_status.php?id=<?= (int)$user['id']; ?>&status=active"
+           class="btn btn-sm btn-outline-warning"
+           title="Inactive - Click to Activate"
+           onclick="return confirm('Are you sure you want to activate this user?');">
+            <i class="fas fa-user-slash"></i>
+        </a>
+
+    <?php endif; ?>
+
+<?php endif; ?>
+
+</div>
                     </td>
                   </tr>
                 <?php endforeach; ?>

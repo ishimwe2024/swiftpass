@@ -575,10 +575,7 @@ $total_buses = $result ? $result->num_rows : 0;
         <i class="fas fa-ticket-alt"></i>
         <span>My Tickets</span>
       </a>
-      <a href="settings.php" class="nav-link">
-        <i class="fas fa-cogs"></i>
-        <span>Settings</span>
-      </a>
+
       <a href="logout.php" class="nav-link">
         <i class="fas fa-sign-out-alt"></i>
         <span>Log Out</span>
