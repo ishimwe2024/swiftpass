@@ -50,6 +50,7 @@ $bookings_query = $conn->prepare("
     LEFT JOIN routes r ON trip.route_id = r.route_id
     LEFT JOIN buses bus ON trip.bus_id = bus.bus_id
     WHERE b.customer_id = ?
+      AND (trip.estimated_arrival IS NULL OR trip.estimated_arrival >= NOW())
     ORDER BY b.booking_date DESC
 ");
 
@@ -250,6 +251,11 @@ function getTicketStatus($checked) {
         .badge-danger {
             background: #f8d7da;
             color: #721c24;
+        }
+
+        .badge-secondary {
+            background: #e2e3e5;
+            color: #383d41;
         }
 
         .btn-download {

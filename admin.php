@@ -276,7 +276,19 @@ if (!empty($booking_date_filter)) {
 $bookings_query .= " ORDER BY b.booking_date DESC LIMIT 50";
 $all_bookings = $conn->query($bookings_query);
 $all_drivers = $conn->query("SELECT * FROM drivers ORDER BY created_at DESC");
-$all_customers = $conn->query("SELECT * FROM customers ORDER BY created_at DESC LIMIT 50");
+$all_customers = $conn->query("
+    SELECT *
+    FROM customers c
+    WHERE c.customer_id = (
+        SELECT c2.customer_id
+        FROM customers c2
+        WHERE c2.email = c.email
+        ORDER BY c2.created_at DESC, c2.customer_id DESC
+        LIMIT 1
+    )
+    ORDER BY c.created_at DESC
+    LIMIT 50
+");
 
 $users_query = "SELECT * FROM users WHERE 1=1";
 if (!empty($user_role_filter)) {

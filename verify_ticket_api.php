@@ -62,8 +62,14 @@ if ($user_company_id) {
     }
 }
 
-// Get current status
-$stmt = $conn->prepare("SELECT checked, checked_at FROM tickets WHERE ticket_id = ? AND booking_id = ?");
+// Get current status + trip arrival time
+$stmt = $conn->prepare("
+    SELECT t.checked, t.checked_at, tr.estimated_arrival
+    FROM tickets t
+    JOIN bookings b ON t.booking_id = b.booking_id
+    JOIN trips tr ON b.trip_id = tr.trip_id
+    WHERE t.ticket_id = ? AND t.booking_id = ?
+");
 $stmt->bind_param("ii", $ticket_id, $booking_id);
 $stmt->execute();
 $result = $stmt->get_result();
@@ -74,6 +80,22 @@ if ($result->num_rows === 0) {
 }
 
 $ticket = $result->fetch_assoc();
+
+// ===== Expiry check =====
+// Optional grace period after arrival (e.g. allow late scans within N minutes of arrival)
+$grace_minutes = 0; // set to e.g. 60 if you want some slack for delayed trips
+$arrival = new DateTime($ticket['estimated_arrival']);
+$arrival->modify("+{$grace_minutes} minutes");
+$now = new DateTime();
+
+if ($now > $arrival) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'This ticket has expired — the trip\'s estimated arrival time has passed.'
+    ]);
+    exit;
+}
+
 if ($ticket['checked'] === 'yes') {
     $time = date('M j, Y g:i A', strtotime($ticket['checked_at']));
     echo json_encode(['success' => false, 'message' => "Ticket already verified on $time."]);

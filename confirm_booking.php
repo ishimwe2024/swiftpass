@@ -770,26 +770,6 @@ if ($unchecked_result) {
                     </div>
                 </div>
             </div>
-
-            <!-- Ticket Statistics -->
-            <div class="glass-card">
-                <div class="section-title"><i class="fas fa-ticket-alt"></i> Ticket Statistics</div>
-                <div class="ticket-stats">
-                    <div class="ticket-stat-box">
-                        <div class="number"><?php echo $total_tickets; ?></div>
-                        <div class="label">Total Tickets</div>
-                    </div>
-                    <div class="ticket-stat-box">
-                        <div class="number text-success"><?php echo $checked_tickets; ?></div>
-                        <div class="label">Checked In</div>
-                    </div>
-                    <div class="ticket-stat-box">
-                        <div class="number text-warning"><?php echo $unchecked_tickets; ?></div>
-                        <div class="label">Pending Check-in</div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Payment Form -->
             <div class="glass-card">
                 <div class="section-title"><i class="fas fa-credit-card"></i> Choose payment method</div>

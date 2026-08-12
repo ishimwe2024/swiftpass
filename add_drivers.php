@@ -7,10 +7,10 @@ $error_message = "";
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $firstname = trim($_POST['firstname'] ?? '');
-    $lastname  = trim($_POST['lastname'] ?? '');
-    $contact   = trim($_POST['contact'] ?? '');
-    $license   = trim($_POST['license'] ?? '');
-    $email     = trim($_POST['email'] ?? '');
+    $lastname = trim($_POST['lastname'] ?? '');
+    $contact = trim($_POST['contact'] ?? '');
+    $license = trim($_POST['license'] ?? '');
+    $email = trim($_POST['email'] ?? '');
 
     // =====================================================
     // VALIDATION
@@ -355,45 +355,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // =================================================
 
                 $success_message =
-                    "✅ Driver added successfully!<br><br>" .
-
-                    "<strong>First Name:</strong> " .
-                    htmlspecialchars($firstname) .
-                    "<br>" .
-
-                    "<strong>Last Name:</strong> " .
-                    htmlspecialchars($lastname) .
-                    "<br>" .
-
-                    "<strong>Full Name:</strong> " .
-                    htmlspecialchars($full_name) .
-                    "<br>" .
-
-                    "<strong>Email:</strong> " .
-                    htmlspecialchars($email) .
-                    "<br>" .
-
-                    "<strong>Contact:</strong> " .
-                    htmlspecialchars($contact) .
-                    "<br>" .
-
-                    "<strong>License:</strong> " .
-                    htmlspecialchars($license) .
-                    "<br>" .
-
-                    "<strong>User ID:</strong> " .
-                    htmlspecialchars($user_id) .
-                    "<br>" .
-
-                    "<strong>User Account:</strong> Created (Role: Driver)" .
-                    "<br>" .
-
-                    "<strong>Driver Record:</strong> Created with user_id: " .
-                    htmlspecialchars($user_id) .
-                    "<br>" .
-
-                    "<strong>Default Password:</strong> 123";
-
+                    "✅ Driver added successfully!<br><br>";
 
                 // Clear form
                 $_POST = [];
@@ -423,10 +385,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
         Add New Driver - SwiftPass
@@ -435,22 +394,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <!-- Bootstrap -->
 
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
 
     <!-- Font Awesome -->
 
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    >
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 
     <style>
-
         :root {
 
             --primary: #2c3e50;
@@ -465,11 +417,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         body {
 
             background:
-                linear-gradient(
-                    135deg,
+                linear-gradient(135deg,
                     #191e32 0%,
-                    #1a151f 100%
-                );
+                    #1a151f 100%);
 
             min-height: 100vh;
 
@@ -492,8 +442,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 15px;
 
             box-shadow:
-                0 10px 30px
-                rgba(0, 0, 0, 0.1);
+                0 10px 30px rgba(0, 0, 0, 0.1);
 
             background:
                 rgba(255, 255, 255, 0.95);
@@ -506,11 +455,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .card-header {
 
             background:
-                linear-gradient(
-                    135deg,
+                linear-gradient(135deg,
                     var(--primary),
-                    var(--secondary)
-                );
+                    var(--secondary));
 
             color: white;
 
@@ -525,11 +472,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-success {
 
             background:
-                linear-gradient(
-                    135deg,
+                linear-gradient(135deg,
                     var(--success),
-                    #27ae60
-                );
+                    #27ae60);
 
             border: none;
 
@@ -552,8 +497,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 translateY(-2px);
 
             box-shadow:
-                0 5px 15px
-                rgba(46, 204, 113, 0.4);
+                0 5px 15px rgba(46, 204, 113, 0.4);
 
         }
 
@@ -561,11 +505,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .btn-warning {
 
             background:
-                linear-gradient(
-                    135deg,
+                linear-gradient(135deg,
                     var(--warning),
-                    #e67e22
-                );
+                    #e67e22);
 
             border: none;
 
@@ -586,8 +528,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 translateY(-2px);
 
             box-shadow:
-                0 5px 15px
-                rgba(243, 156, 18, 0.4);
+                0 5px 15px rgba(243, 156, 18, 0.4);
 
         }
 
@@ -614,8 +555,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 var(--secondary);
 
             box-shadow:
-                0 0 0 0.2rem
-                rgba(52, 152, 219, 0.25);
+                0 0 0 0.2rem rgba(52, 152, 219, 0.25);
 
         }
 
@@ -663,11 +603,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .input-group-text {
 
             background:
-                linear-gradient(
-                    135deg,
+                linear-gradient(135deg,
                     var(--primary),
-                    var(--secondary)
-                );
+                    var(--secondary));
 
             color: white;
 
@@ -688,11 +626,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 50%;
 
             background:
-                linear-gradient(
-                    135deg,
+                linear-gradient(135deg,
                     var(--secondary),
-                    var(--primary)
-                );
+                    var(--primary));
 
             display: flex;
 
@@ -760,7 +696,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 #0d47a1;
 
         }
-
     </style>
 
 </head>
@@ -768,473 +703,300 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <body>
 
-<div class="container">
+    <div class="container">
 
-    <div class="row justify-content-center">
+        <div class="row justify-content-center">
 
-        <div class="col-md-8">
+            <div class="col-md-8">
 
-            <div class="card">
-
-
-                <!-- HEADER -->
-
-                <div class="card-header text-center">
-
-                    <h3 class="mb-0">
-
-                        <i
-                            class="fas fa-user-tie me-2"
-                        ></i>
-
-                        Add New Driver
-
-                    </h3>
+                <div class="card">
 
 
-                    <p class="mb-0 opacity-75">
+                    <!-- HEADER -->
 
-                        Register a new driver
-                        for SwiftPass
+                    <div class="card-header text-center">
 
-                    </p>
+                        <h3 class="mb-0">
 
-                </div>
+                            <i class="fas fa-user-tie me-2"></i>
 
+                            Add New Driver
 
-                <div class="card-body p-4">
-
-
-                    <!-- SUCCESS -->
-
-                    <?php if ($success_message !== ''): ?>
-
-                        <div
-                            class="alert alert-success alert-dismissible fade show"
-                            role="alert"
-                        >
-
-                            <i
-                                class="fas fa-check-circle me-2"
-                            ></i>
-
-                            <?= $success_message ?>
-
-                            <button
-                                type="button"
-                                class="btn-close"
-                                data-bs-dismiss="alert"
-                            ></button>
-
-                        </div>
-
-                    <?php endif; ?>
+                        </h3>
 
 
-                    <!-- ERROR -->
+                        <p class="mb-0 opacity-75">
 
-                    <?php if ($error_message !== ''): ?>
+                            Register a new driver
+                            for SwiftPass
 
-                        <div
-                            class="alert alert-danger alert-dismissible fade show"
-                            role="alert"
-                        >
+                        </p>
 
-                            <i
-                                class="fas fa-exclamation-circle me-2"
-                            ></i>
-
-                            <?= $error_message ?>
-
-                            <button
-                                type="button"
-                                class="btn-close"
-                                data-bs-dismiss="alert"
-                            ></button>
-
-                        </div>
-
-                    <?php endif; ?>
+                    </div>
 
 
-                    <!-- FORM -->
-
-                    <form
-                        method="POST"
-                        action=""
-                        id="driverForm"
-                    >
-
-                        <div class="row g-3">
+                    <div class="card-body p-4">
 
 
-                            <!-- AVATAR -->
+                        <!-- SUCCESS -->
 
-                            <div class="col-12 text-center">
+                        <?php if ($success_message !== ''): ?>
 
-                                <div class="driver-avatar">
+                            <div class="alert alert-success alert-dismissible fade show" role="alert">
 
-                                    <i
-                                        class="fas fa-user-tie"
-                                    ></i>
+                                <i class="fas fa-check-circle me-2"></i>
+
+                                <?= $success_message ?>
+
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+
+                            </div>
+
+                        <?php endif; ?>
+
+
+                        <!-- ERROR -->
+
+                        <?php if ($error_message !== ''): ?>
+
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+
+                                <i class="fas fa-exclamation-circle me-2"></i>
+
+                                <?= $error_message ?>
+
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+
+                            </div>
+
+                        <?php endif; ?>
+
+
+                        <!-- FORM -->
+
+                        <form method="POST" action="" id="driverForm">
+
+                            <div class="row g-3">
+
+
+                                <!-- AVATAR -->
+
+                                <div class="col-12 text-center">
+
+                                    <div class="driver-avatar">
+
+                                        <i class="fas fa-user-tie"></i>
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- FIRST NAME -->
+
+                                <div class="col-md-6">
+
+                                    <label for="firstname" class="form-label fw-bold required-field">
+
+                                        First Name
+
+                                    </label>
+
+
+                                    <div class="input-group">
+
+                                        <span class="input-group-text">
+
+                                            <i class="fas fa-user"></i>
+
+                                        </span>
+
+
+                                        <input type="text" id="firstname" name="firstname" class="form-control"
+                                            value="<?= isset($_POST['firstname']) ? htmlspecialchars($_POST['firstname']) : '' ?>"
+                                            placeholder="Enter first name" required maxlength="50">
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- LAST NAME -->
+
+                                <div class="col-md-6">
+
+                                    <label for="lastname" class="form-label fw-bold required-field">
+
+                                        Last Name
+
+                                    </label>
+
+
+                                    <div class="input-group">
+
+                                        <span class="input-group-text">
+
+                                            <i class="fas fa-user"></i>
+
+                                        </span>
+
+
+                                        <input type="text" id="lastname" name="lastname" class="form-control"
+                                            value="<?= isset($_POST['lastname']) ? htmlspecialchars($_POST['lastname']) : '' ?>"
+                                            placeholder="Enter last name" required maxlength="50">
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- EMAIL -->
+
+                                <div class="col-12">
+
+                                    <label for="email" class="form-label fw-bold required-field">
+
+                                        Email Address
+
+                                    </label>
+
+
+                                    <div class="input-group">
+
+                                        <span class="input-group-text">
+
+                                            <i class="fas fa-envelope"></i>
+
+                                        </span>
+
+
+                                        <input type="email" id="email" name="email" class="form-control"
+                                            value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>"
+                                            placeholder="Enter driver's email address" required maxlength="100">
+
+                                    </div>
+
+                                    <div class="form-text">
+
+                                        This email will be used for
+                                        the user account login.
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- CONTACT -->
+
+                                <div class="col-md-6">
+
+                                    <label for="contact" class="form-label fw-bold required-field">
+
+                                        Contact Number
+
+                                    </label>
+
+
+                                    <div class="input-group">
+
+                                        <span class="input-group-text">
+
+                                            <i class="fas fa-phone"></i>
+
+                                        </span>
+
+
+                                        <input type="tel" id="contact" name="contact" class="form-control"
+                                            value="<?= isset($_POST['contact']) ? htmlspecialchars($_POST['contact']) : '' ?>"
+                                            placeholder="078 123 4567" required maxlength="20">
+
+                                    </div>
+
+                                    <div class="form-text">
+
+                                        Must be 10 digits starting with
+                                        078, 072, 073, or 079.
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- LICENSE -->
+
+                                <div class="col-md-6">
+
+                                    <label for="license" class="form-label fw-bold required-field">
+
+                                        License Number
+
+                                    </label>
+
+
+                                    <div class="input-group">
+
+                                        <span class="input-group-text">
+
+                                            <i class="fas fa-id-card"></i>
+
+                                        </span>
+
+
+                                        <input type="text" id="license" name="license" class="form-control"
+                                            value="<?= isset($_POST['license']) ? htmlspecialchars($_POST['license']) : '' ?>"
+                                            placeholder="Enter license number" required maxlength="20">
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- AUTOMATIC ACCOUNT -->
+
+
+
+                            </div>
+
+
+                            <!-- BUTTONS -->
+
+                            <div class="mt-4 d-flex justify-content-between flex-wrap gap-2">
+
+                                <a href="admin.php" class="back-btn">
+
+                                    <i class="fas fa-arrow-left"></i>
+
+                                    Back to Dashboard
+
+                                </a>
+
+
+                                <div>
+
+                                    <button type="reset" class="btn btn-warning me-2">
+
+                                        <i class="fas fa-undo me-2"></i>
+
+                                        Clear Form
+
+                                    </button>
+
+
+                                    <button type="submit" class="btn btn-success">
+
+                                        <i class="fas fa-user-plus me-2"></i>
+
+                                        Add Driver
+
+                                    </button>
 
                                 </div>
 
                             </div>
 
+                        </form>
 
-                            <!-- FIRST NAME -->
-
-                            <div class="col-md-6">
-
-                                <label
-                                    for="firstname"
-                                    class="form-label fw-bold required-field"
-                                >
-
-                                    First Name
-
-                                </label>
-
-
-                                <div class="input-group">
-
-                                    <span
-                                        class="input-group-text"
-                                    >
-
-                                        <i
-                                            class="fas fa-user"
-                                        ></i>
-
-                                    </span>
-
-
-                                    <input
-                                        type="text"
-                                        id="firstname"
-                                        name="firstname"
-                                        class="form-control"
-                                        value="<?= isset($_POST['firstname']) ? htmlspecialchars($_POST['firstname']) : '' ?>"
-                                        placeholder="Enter first name"
-                                        required
-                                        maxlength="50"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            <!-- LAST NAME -->
-
-                            <div class="col-md-6">
-
-                                <label
-                                    for="lastname"
-                                    class="form-label fw-bold required-field"
-                                >
-
-                                    Last Name
-
-                                </label>
-
-
-                                <div class="input-group">
-
-                                    <span
-                                        class="input-group-text"
-                                    >
-
-                                        <i
-                                            class="fas fa-user"
-                                        ></i>
-
-                                    </span>
-
-
-                                    <input
-                                        type="text"
-                                        id="lastname"
-                                        name="lastname"
-                                        class="form-control"
-                                        value="<?= isset($_POST['lastname']) ? htmlspecialchars($_POST['lastname']) : '' ?>"
-                                        placeholder="Enter last name"
-                                        required
-                                        maxlength="50"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            <!-- EMAIL -->
-
-                            <div class="col-12">
-
-                                <label
-                                    for="email"
-                                    class="form-label fw-bold required-field"
-                                >
-
-                                    Email Address
-
-                                </label>
-
-
-                                <div class="input-group">
-
-                                    <span
-                                        class="input-group-text"
-                                    >
-
-                                        <i
-                                            class="fas fa-envelope"
-                                        ></i>
-
-                                    </span>
-
-
-                                    <input
-                                        type="email"
-                                        id="email"
-                                        name="email"
-                                        class="form-control"
-                                        value="<?= isset($_POST['email']) ? htmlspecialchars($_POST['email']) : '' ?>"
-                                        placeholder="Enter driver's email address"
-                                        required
-                                        maxlength="100"
-                                    >
-
-                                </div>
-
-                                <div class="form-text">
-
-                                    This email will be used for
-                                    the user account login.
-
-                                </div>
-
-                            </div>
-
-
-                            <!-- CONTACT -->
-
-                            <div class="col-md-6">
-
-                                <label
-                                    for="contact"
-                                    class="form-label fw-bold required-field"
-                                >
-
-                                    Contact Number
-
-                                </label>
-
-
-                                <div class="input-group">
-
-                                    <span
-                                        class="input-group-text"
-                                    >
-
-                                        <i
-                                            class="fas fa-phone"
-                                        ></i>
-
-                                    </span>
-
-
-                                    <input
-                                        type="tel"
-                                        id="contact"
-                                        name="contact"
-                                        class="form-control"
-                                        value="<?= isset($_POST['contact']) ? htmlspecialchars($_POST['contact']) : '' ?>"
-                                        placeholder="078 123 4567"
-                                        required
-                                        maxlength="20"
-                                    >
-
-                                </div>
-
-                                <div class="form-text">
-
-                                    Must be 10 digits starting with
-                                    078, 072, 073, or 079.
-
-                                </div>
-
-                            </div>
-
-
-                            <!-- LICENSE -->
-
-                            <div class="col-md-6">
-
-                                <label
-                                    for="license"
-                                    class="form-label fw-bold required-field"
-                                >
-
-                                    License Number
-
-                                </label>
-
-
-                                <div class="input-group">
-
-                                    <span
-                                        class="input-group-text"
-                                    >
-
-                                        <i
-                                            class="fas fa-id-card"
-                                        ></i>
-
-                                    </span>
-
-
-                                    <input
-                                        type="text"
-                                        id="license"
-                                        name="license"
-                                        class="form-control"
-                                        value="<?= isset($_POST['license']) ? htmlspecialchars($_POST['license']) : '' ?>"
-                                        placeholder="Enter license number"
-                                        required
-                                        maxlength="20"
-                                    >
-
-                                </div>
-
-                            </div>
-
-
-                            <!-- AUTOMATIC ACCOUNT -->
-
-                            <div class="col-12">
-
-                                <div class="login-info">
-
-                                    <i
-                                        class="fas fa-lock me-2"
-                                    ></i>
-
-                                    <strong>
-                                        Automatic User Account
-                                    </strong>
-
-                                    <br>
-
-                                    A user account will
-                                    automatically be created
-                                    for this driver.
-
-                                    <br>
-
-                                    <strong>
-                                        Email:
-                                    </strong>
-                                    As entered above
-
-                                    <br>
-
-                                    <strong>
-                                        Role:
-                                    </strong>
-                                    Driver
-
-                                    <br>
-
-                                    <strong>
-                                        Default password:
-                                    </strong>
-                                    123
-
-                                </div>
-
-                                <div class="warning-info">
-
-                                    <i
-                                        class="fas fa-info-circle me-2"
-                                    ></i>
-
-                                    <strong>Information:</strong>
-
-                                    The driver record will be linked
-                                    to the user account.
-
-                                    <br>
-
-                                    <small>
-                                        <strong>user_id</strong> in drivers
-                                        table will store the user ID
-                                        as a data field (no foreign key constraint).
-                                    </small>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- BUTTONS -->
-
-                        <div
-                            class="mt-4 d-flex justify-content-between flex-wrap gap-2"
-                        >
-
-                            <a
-                                href="admin.php"
-                                class="back-btn"
-                            >
-
-                                <i
-                                    class="fas fa-arrow-left"
-                                ></i>
-
-                                Back to Dashboard
-
-                            </a>
-
-
-                            <div>
-
-                                <button
-                                    type="reset"
-                                    class="btn btn-warning me-2"
-                                >
-
-                                    <i
-                                        class="fas fa-undo me-2"
-                                    ></i>
-
-                                    Clear Form
-
-                                </button>
-
-
-                                <button
-                                    type="submit"
-                                    class="btn btn-success"
-                                >
-
-                                    <i
-                                        class="fas fa-user-plus me-2"
-                                    ></i>
-
-                                    Add Driver
-
-                                </button>
-
-                            </div>
-
-                        </div>
-
-                    </form>
+                    </div>
 
                 </div>
 
@@ -1244,327 +1006,323 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     </div>
 
-</div>
+
+    <!-- Bootstrap JS -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 
-<!-- Bootstrap JS -->
+    <script>
 
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-></script>
-
-
-<script>
-
-document.addEventListener(
-    'DOMContentLoaded',
-    function () {
-
-        const form =
-            document.getElementById(
-                'driverForm'
-            );
-
-        const firstnameInput =
-            document.getElementById(
-                'firstname'
-            );
-
-        const lastnameInput =
-            document.getElementById(
-                'lastname'
-            );
-
-        const emailInput =
-            document.getElementById(
-                'email'
-            );
-
-        const contactInput =
-            document.getElementById(
-                'contact'
-            );
-
-        const licenseInput =
-            document.getElementById(
-                'license'
-            );
-
-
-        // ==========================================
-        // FORMAT FIRST NAME
-        // ==========================================
-
-        firstnameInput.addEventListener(
-            'blur',
+        document.addEventListener(
+            'DOMContentLoaded',
             function () {
 
-                this.value =
-                    this.value
-                        .trim()
-                        .charAt(0)
-                        .toUpperCase() +
-                    this.value
-                        .trim()
-                        .slice(1)
-                        .toLowerCase();
+                const form =
+                    document.getElementById(
+                        'driverForm'
+                    );
 
-            }
-        );
+                const firstnameInput =
+                    document.getElementById(
+                        'firstname'
+                    );
 
+                const lastnameInput =
+                    document.getElementById(
+                        'lastname'
+                    );
 
-        // ==========================================
-        // FORMAT LAST NAME
-        // ==========================================
+                const emailInput =
+                    document.getElementById(
+                        'email'
+                    );
 
-        lastnameInput.addEventListener(
-            'blur',
-            function () {
+                const contactInput =
+                    document.getElementById(
+                        'contact'
+                    );
 
-                this.value =
-                    this.value
-                        .trim()
-                        .charAt(0)
-                        .toUpperCase() +
-                    this.value
-                        .trim()
-                        .slice(1)
-                        .toLowerCase();
-
-            }
-        );
+                const licenseInput =
+                    document.getElementById(
+                        'license'
+                    );
 
 
-        // ==========================================
-        // EMAIL TO LOWER CASE
-        // ==========================================
+                // ==========================================
+                // FORMAT FIRST NAME
+                // ==========================================
 
-        emailInput.addEventListener(
-            'blur',
-            function () {
+                firstnameInput.addEventListener(
+                    'blur',
+                    function () {
 
-                this.value =
-                    this.value.toLowerCase().trim();
+                        this.value =
+                            this.value
+                                .trim()
+                                .charAt(0)
+                                .toUpperCase() +
+                            this.value
+                                .trim()
+                                .slice(1)
+                                .toLowerCase();
 
-            }
-        );
-
-
-        // ==========================================
-        // LICENSE UPPERCASE
-        // ==========================================
-
-        licenseInput.addEventListener(
-            'input',
-            function () {
-
-                this.value =
-                    this.value.toUpperCase();
-
-            }
-        );
-
-
-        // ==========================================
-        // PHONE NUMBER FORMATTING
-        // ==========================================
-
-        contactInput.addEventListener(
-            'input',
-            function () {
-
-                // Remove all non-digit characters
-                let numbers = this.value.replace(/\D/g, '');
-
-                // Limit to 10 digits
-                numbers = numbers.substring(0, 10);
-
-                // Format as: 078 123 4567
-                let formatted = '';
-
-                if (numbers.length > 0) {
-                    if (numbers.length <= 3) {
-                        formatted = numbers;
-                    } else if (numbers.length <= 6) {
-                        formatted = numbers.substring(0, 3) + ' ' + numbers.substring(3);
-                    } else {
-                        formatted = numbers.substring(0, 3) + ' ' + numbers.substring(3, 6) + ' ' + numbers.substring(6);
                     }
-                }
-
-                this.value = formatted;
-
-            }
-        );
+                );
 
 
-        // ==========================================
-        // FORM VALIDATION
-        // ==========================================
+                // ==========================================
+                // FORMAT LAST NAME
+                // ==========================================
 
-        form.addEventListener(
-            'submit',
-            function (event) {
+                lastnameInput.addEventListener(
+                    'blur',
+                    function () {
 
-                const firstname =
-                    firstnameInput.value.trim();
+                        this.value =
+                            this.value
+                                .trim()
+                                .charAt(0)
+                                .toUpperCase() +
+                            this.value
+                                .trim()
+                                .slice(1)
+                                .toLowerCase();
 
-                const lastname =
-                    lastnameInput.value.trim();
-
-                const email =
-                    emailInput.value.trim();
-
-                const contact =
-                    contactInput.value.trim();
-
-                const license =
-                    licenseInput.value.trim();
+                    }
+                );
 
 
-                // Check required fields
-                if (
-                    firstname === '' ||
-                    lastname === '' ||
-                    email === '' ||
-                    contact === '' ||
-                    license === ''
-                ) {
+                // ==========================================
+                // EMAIL TO LOWER CASE
+                // ==========================================
 
-                    event.preventDefault();
+                emailInput.addEventListener(
+                    'blur',
+                    function () {
 
-                    alert(
-                        'Please fill in all required fields.'
+                        this.value =
+                            this.value.toLowerCase().trim();
+
+                    }
+                );
+
+
+                // ==========================================
+                // LICENSE UPPERCASE
+                // ==========================================
+
+                licenseInput.addEventListener(
+                    'input',
+                    function () {
+
+                        this.value =
+                            this.value.toUpperCase();
+
+                    }
+                );
+
+
+                // ==========================================
+                // PHONE NUMBER FORMATTING
+                // ==========================================
+
+                contactInput.addEventListener(
+                    'input',
+                    function () {
+
+                        // Remove all non-digit characters
+                        let numbers = this.value.replace(/\D/g, '');
+
+                        // Limit to 10 digits
+                        numbers = numbers.substring(0, 10);
+
+                        // Format as: 078 123 4567
+                        let formatted = '';
+
+                        if (numbers.length > 0) {
+                            if (numbers.length <= 3) {
+                                formatted = numbers;
+                            } else if (numbers.length <= 6) {
+                                formatted = numbers.substring(0, 3) + ' ' + numbers.substring(3);
+                            } else {
+                                formatted = numbers.substring(0, 3) + ' ' + numbers.substring(3, 6) + ' ' + numbers.substring(6);
+                            }
+                        }
+
+                        this.value = formatted;
+
+                    }
+                );
+
+
+                // ==========================================
+                // FORM VALIDATION
+                // ==========================================
+
+                form.addEventListener(
+                    'submit',
+                    function (event) {
+
+                        const firstname =
+                            firstnameInput.value.trim();
+
+                        const lastname =
+                            lastnameInput.value.trim();
+
+                        const email =
+                            emailInput.value.trim();
+
+                        const contact =
+                            contactInput.value.trim();
+
+                        const license =
+                            licenseInput.value.trim();
+
+
+                        // Check required fields
+                        if (
+                            firstname === '' ||
+                            lastname === '' ||
+                            email === '' ||
+                            contact === '' ||
+                            license === ''
+                        ) {
+
+                            event.preventDefault();
+
+                            alert(
+                                'Please fill in all required fields.'
+                            );
+
+                            return;
+                        }
+
+
+                        // Validate email format
+                        const emailRegex =
+                            /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                        if (
+                            !emailRegex.test(email)
+                        ) {
+
+                            event.preventDefault();
+
+                            alert(
+                                'Please enter a valid email address.'
+                            );
+
+                            emailInput.focus();
+
+                            return;
+                        }
+
+
+                        // Validate phone number (10 digits, starts with 078, 072, 073, or 079)
+                        const cleanContact = contact.replace(/\s/g, '');
+
+                        const phoneRegex =
+                            /^(078|072|073|079)\d{7}$/;
+
+                        if (
+                            !phoneRegex.test(cleanContact)
+                        ) {
+
+                            event.preventDefault();
+
+                            alert(
+                                'Please enter a valid phone number.\n\n' +
+                                'Must be 10 digits starting with 078, 072, 073, or 079.\n' +
+                                'Example: 078 123 4567'
+                            );
+
+                            contactInput.focus();
+
+                            return;
+                        }
+
+
+                        if (
+                            license.length < 3
+                        ) {
+
+                            event.preventDefault();
+
+                            alert(
+                                'Please enter a valid license number.'
+                            );
+
+                            licenseInput.focus();
+
+                            return;
+                        }
+
+                    }
+                );
+
+
+                // ==========================================
+                // CLEAR FORM
+                // ==========================================
+
+                const resetButton =
+                    document.querySelector(
+                        'button[type="reset"]'
                     );
 
-                    return;
-                }
 
+                resetButton.addEventListener(
+                    'click',
+                    function (event) {
 
-                // Validate email format
-                const emailRegex =
-                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (
+                            !confirm(
+                                'Are you sure you want to clear the form?'
+                            )
+                        ) {
 
-                if (
-                    !emailRegex.test(email)
-                ) {
-
-                    event.preventDefault();
-
-                    alert(
-                        'Please enter a valid email address.'
-                    );
-
-                    emailInput.focus();
-
-                    return;
-                }
-
-
-                // Validate phone number (10 digits, starts with 078, 072, 073, or 079)
-                const cleanContact = contact.replace(/\s/g, '');
-
-                const phoneRegex =
-                    /^(078|072|073|079)\d{7}$/;
-
-                if (
-                    !phoneRegex.test(cleanContact)
-                ) {
-
-                    event.preventDefault();
-
-                    alert(
-                        'Please enter a valid phone number.\n\n' +
-                        'Must be 10 digits starting with 078, 072, 073, or 079.\n' +
-                        'Example: 078 123 4567'
-                    );
-
-                    contactInput.focus();
-
-                    return;
-                }
-
-
-                if (
-                    license.length < 3
-                ) {
-
-                    event.preventDefault();
-
-                    alert(
-                        'Please enter a valid license number.'
-                    );
-
-                    licenseInput.focus();
-
-                    return;
-                }
-
-            }
-        );
-
-
-        // ==========================================
-        // CLEAR FORM
-        // ==========================================
-
-        const resetButton =
-            document.querySelector(
-                'button[type="reset"]'
-            );
-
-
-        resetButton.addEventListener(
-            'click',
-            function (event) {
-
-                if (
-                    !confirm(
-                        'Are you sure you want to clear the form?'
-                    )
-                ) {
-
-                    event.preventDefault();
-
-                }
-
-            }
-        );
-
-
-        // ==========================================
-        // AUTO HIDE ALERTS
-        // ==========================================
-
-        setTimeout(
-            function () {
-
-                document
-                    .querySelectorAll(
-                        '.alert'
-                    )
-                    .forEach(
-                        function (element) {
-
-                            const alert =
-                                bootstrap.Alert
-                                    .getOrCreateInstance(
-                                        element
-                                    );
-
-                            alert.close();
+                            event.preventDefault();
 
                         }
-                    );
 
-            },
-            7000
+                    }
+                );
+
+
+                // ==========================================
+                // AUTO HIDE ALERTS
+                // ==========================================
+
+                setTimeout(
+                    function () {
+
+                        document
+                            .querySelectorAll(
+                                '.alert'
+                            )
+                            .forEach(
+                                function (element) {
+
+                                    const alert =
+                                        bootstrap.Alert
+                                            .getOrCreateInstance(
+                                                element
+                                            );
+
+                                    alert.close();
+
+                                }
+                            );
+
+                    },
+                    7000
+                );
+
+            }
         );
 
-    }
-);
-
-</script>
+    </script>
 
 </body>
 
