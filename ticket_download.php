@@ -200,11 +200,12 @@ if (empty($ticket_details) && empty($booking_details)) {
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 12px;
+            margin: 0;
         }
 
         .ticket-wrapper {
-            max-width: 800px;
+            max-width: 860px;
             width: 100%;
         }
 
@@ -214,15 +215,19 @@ if (empty($ticket_details) && empty($booking_details)) {
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
             overflow: hidden;
             position: relative;
+            max-height: calc(100vh - 24px);
+            display: flex;
+            flex-direction: column;
         }
 
         .ticket-header {
             background: linear-gradient(135deg, #1a237e, #0d47a1);
-            padding: 20px 30px;
+            padding: 16px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 3px solid #ff6f00;
+            flex: 0 0 auto;
         }
 
         .company-info {
@@ -232,15 +237,15 @@ if (empty($ticket_details) && empty($booking_details)) {
         }
 
         .company-logo {
-            width: 50px;
-            height: 50px;
+            width: 44px;
+            height: 44px;
             background: rgba(255, 255, 255, 0.15);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #fff;
-            font-size: 1.8rem;
+            font-size: 1.45rem;
             border: 2px solid rgba(255, 255, 255, 0.3);
         }
 
@@ -251,7 +256,7 @@ if (empty($ticket_details) && empty($booking_details)) {
         .company-name h2 {
             margin: 0;
             font-weight: 700;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             letter-spacing: 1px;
         }
 
@@ -263,24 +268,25 @@ if (empty($ticket_details) && empty($booking_details)) {
         .ticket-status {
             background: <?php echo ($ticket_details['checked'] ?? 'no') === 'yes' ? '#e65100' : '#2e7d32'; ?>;
             color: #fff;
-            padding: 8px 20px;
+            padding: 7px 16px;
             border-radius: 50px;
             font-weight: 700;
-            font-size: 0.85rem;
+            font-size: 0.78rem;
             letter-spacing: 0.5px;
             text-transform: uppercase;
             transition: background 0.3s ease;
         }
 
         .ticket-body {
-            padding: 25px 30px;
+            padding: 18px 24px;
+            overflow: auto;
         }
 
         .route-display {
             background: linear-gradient(135deg, #f5f7fa, #e8ecf1);
             border-radius: 12px;
-            padding: 20px 25px;
-            margin-bottom: 25px;
+            padding: 14px 18px;
+            margin-bottom: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -292,7 +298,7 @@ if (empty($ticket_details) && empty($booking_details)) {
         }
 
         .route-city .city-name {
-            font-size: 1.8rem;
+            font-size: 1.45rem;
             font-weight: 800;
             color: #1a237e;
         }
@@ -307,19 +313,19 @@ if (empty($ticket_details) && empty($booking_details)) {
 
         .route-arrow {
             color: #0d47a1;
-            font-size: 2rem;
-            padding: 0 15px;
+            font-size: 1.7rem;
+            padding: 0 10px;
         }
 
         .ticket-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 10px 15px;
+            margin-bottom: 14px;
         }
 
         .ticket-field {
-            padding: 10px 0;
+            padding: 7px 0;
             border-bottom: 1px dashed #e0e0e0;
         }
 
@@ -332,7 +338,7 @@ if (empty($ticket_details) && empty($booking_details)) {
         }
 
         .ticket-field .value {
-            font-size: 1rem;
+            font-size: 0.92rem;
             font-weight: 600;
             color: #1a237e;
             margin-top: 2px;
@@ -341,12 +347,12 @@ if (empty($ticket_details) && empty($booking_details)) {
         .price-section {
             background: linear-gradient(135deg, #1a237e, #0d47a1);
             border-radius: 12px;
-            padding: 15px 20px;
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             color: #fff;
-            margin-top: 10px;
+            margin-top: 6px;
         }
 
         .price-section .price-label {
@@ -355,7 +361,7 @@ if (empty($ticket_details) && empty($booking_details)) {
         }
 
         .price-section .price-amount {
-            font-size: 1.8rem;
+            font-size: 1.45rem;
             font-weight: 800;
         }
 
@@ -368,9 +374,9 @@ if (empty($ticket_details) && empty($booking_details)) {
         .ticket-bottom {
             display: grid;
             grid-template-columns: 1fr 2fr;
-            gap: 20px;
-            margin-top: 20px;
-            padding-top: 20px;
+            gap: 14px;
+            margin-top: 14px;
+            padding-top: 14px;
             border-top: 2px dashed #e0e0e0;
         }
 
@@ -384,19 +390,19 @@ if (empty($ticket_details) && empty($booking_details)) {
             text-transform: uppercase;
             letter-spacing: 0.5px;
             font-weight: 600;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .qr-code-box {
             display: inline-block;
-            padding: 8px;
+            padding: 6px;
             background: #fff;
             border-radius: 8px;
             border: 1px solid #e0e0e0;
         }
 
         .qr-code-box img {
-            max-width: 100px;
+            max-width: 82px;
             height: auto;
             display: block;
         }
@@ -404,7 +410,7 @@ if (empty($ticket_details) && empty($booking_details)) {
         .ticket-meta {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 5px 20px;
+            gap: 4px 14px;
         }
 
         .ticket-meta .meta-item {
@@ -420,16 +426,17 @@ if (empty($ticket_details) && empty($booking_details)) {
         }
 
         .ticket-meta .meta-value {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             font-weight: 600;
             color: #1a237e;
         }
 
         .ticket-footer {
             background: #f5f7fa;
-            padding: 12px 30px;
+            padding: 10px 24px;
             text-align: center;
             border-top: 1px solid #e0e0e0;
+            flex: 0 0 auto;
         }
 
         .ticket-footer .footer-text {
@@ -446,7 +453,7 @@ if (empty($ticket_details) && empty($booking_details)) {
             display: flex;
             gap: 10px;
             justify-content: center;
-            margin-top: 20px;
+            margin-top: 12px;
             flex-wrap: wrap;
         }
 
@@ -505,6 +512,59 @@ if (empty($ticket_details) && empty($booking_details)) {
             .price-section .price-amount { font-size: 1.5rem; }
             .action-buttons { flex-direction: column; }
             .btn-action { width: 100%; justify-content: center; }
+        }
+
+        @media (max-height: 860px) {
+            body {
+                padding: 8px;
+            }
+            .bus-ticket {
+                max-height: calc(100vh - 16px);
+            }
+            .ticket-header {
+                padding: 14px 20px;
+            }
+            .ticket-body {
+                padding: 14px 20px;
+            }
+            .route-display {
+                padding: 12px 15px;
+                margin-bottom: 12px;
+            }
+            .route-city .city-name {
+                font-size: 1.25rem;
+            }
+            .ticket-grid {
+                gap: 8px 12px;
+                margin-bottom: 12px;
+            }
+            .ticket-field .value {
+                font-size: 0.88rem;
+            }
+            .price-section .price-amount {
+                font-size: 1.25rem;
+            }
+            .ticket-bottom {
+                gap: 10px;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+            .qr-code-box img {
+                max-width: 72px;
+            }
+            .ticket-footer {
+                padding: 8px 18px;
+            }
+            .ticket-footer .footer-text {
+                font-size: 0.64rem;
+            }
+            .action-buttons {
+                margin-top: 10px;
+            }
+            .btn-action {
+                padding: 9px 18px;
+                font-size: 0.82rem;
+            }
         }
 
         /* ===================== Print: force the ticket onto a single page ===================== */
