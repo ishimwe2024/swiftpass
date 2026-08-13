@@ -238,20 +238,13 @@ if ($heroImage === '') {
       box-shadow: 0 14px 28px rgba(62, 163, 255, 0.28);
     }
 
-    .info-band {
-      background: #fff;
-      padding: 2.8rem 0 3.2rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.3);
-    }
-
     .section-block {
       padding: 5rem 0;
       background: #fff;
-      border-top: 1px solid var(--line);
     }
 
-    .section-block.alt {
-      background: #f9fbfc;
+    .section-block.light {
+      background: #f8fbff;
     }
 
     .section-shell {
@@ -260,14 +253,8 @@ if ($heroImage === '') {
       padding: 0 1.5rem;
     }
 
-    .section-title {
-      text-align: center;
-      margin-bottom: 2.8rem;
-    }
-
-    .section-title span {
+    .title-sm {
       display: inline-block;
-      margin-bottom: 0.8rem;
       color: var(--blue-dark);
       font-family: 'Montserrat', sans-serif;
       font-size: 0.82rem;
@@ -276,414 +263,193 @@ if ($heroImage === '') {
       letter-spacing: 0.08em;
     }
 
-    .section-title h2 {
-      margin: 0 0 0.9rem;
+    .section-divider {
+      width: 78px;
+      height: 4px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--blue-dark), #66bcff);
+      margin-top: 0.9rem;
+    }
+
+    .section-copy h2 {
+      margin: 1.35rem 0 0.85rem;
       font-family: 'Montserrat', sans-serif;
-      font-size: clamp(2rem, 4vw, 3rem);
+      font-size: clamp(2rem, 4vw, 2.9rem);
       font-weight: 800;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+
+    .section-copy p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 1.02rem;
+    }
+
+    .section-intro {
+      max-width: 640px;
+    }
+
+    .stack-card {
+      background: #fff;
+      border: 1px solid #e3edf7;
+      border-radius: 24px;
+      padding: 1.4rem;
+      box-shadow: 0 16px 34px rgba(34, 50, 71, 0.06);
+      height: 100%;
+    }
+
+    .stack-card h3,
+    .stack-card h4 {
+      margin: 0 0 0.65rem;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
       color: var(--navy);
     }
 
-    .section-title p {
-      max-width: 720px;
-      margin: 0 auto;
+    .stack-card p {
+      margin: 0;
       color: var(--muted);
-      font-size: 1.08rem;
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
-    .steps-grid,
-    .support-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 1.5rem;
-    }
-
-    .step-card,
-    .support-card {
-      background: #fff;
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      padding: 1.7rem;
-      box-shadow: 0 18px 34px rgba(34, 50, 71, 0.05);
-    }
-
-    .step-number,
-    .card-icon {
-      width: 56px;
-      height: 56px;
-      border-radius: 18px;
+    .icon-pill {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
       display: grid;
       place-items: center;
       margin-bottom: 1rem;
       background: linear-gradient(135deg, var(--blue), var(--blue-dark));
       color: white;
-      font-family: 'Montserrat', sans-serif;
-      font-weight: 800;
-      font-size: 1.1rem;
+      font-size: 1.08rem;
+      box-shadow: 0 12px 24px rgba(15, 111, 216, 0.16);
     }
 
-    .step-card h3,
-    .support-card h3 {
-      margin: 0 0 0.75rem;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--navy);
-    }
-
-    .step-card p,
-    .support-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.6;
-      font-size: 1rem;
-    }
-
-    .find-savings {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 2rem;
-      align-items: center;
-    }
-
-    .find-panel {
-      background: linear-gradient(135deg, #133764, #1f5da5);
-      color: white;
-      border-radius: 28px;
-      padding: 2.2rem;
-      box-shadow: 0 22px 40px rgba(29, 48, 69, 0.18);
-    }
-
-    .find-panel h3 {
-      margin: 0 0 1rem;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 2rem;
-      font-weight: 800;
-    }
-
-    .find-panel p {
-      margin: 0 0 1.4rem;
-      color: rgba(255, 255, 255, 0.88);
-      line-height: 1.7;
-    }
-
-    .find-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 0.9rem;
-    }
-
-    .find-list li {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 16px;
-      padding: 0.9rem 1rem;
-    }
-
-    .find-cta {
-      display: grid;
-      gap: 1rem;
-    }
-
-    .cta-tile {
-      background: #fff;
-      border: 1px solid var(--line);
+    .about-image,
+    .work-image {
       border-radius: 24px;
-      padding: 1.5rem;
-      box-shadow: 0 18px 34px rgba(34, 50, 71, 0.05);
+      overflow: hidden;
+      box-shadow: 0 22px 46px rgba(34, 50, 71, 0.14);
+      min-height: 320px;
+      background:
+        linear-gradient(rgba(12, 46, 90, 0.18), rgba(12, 46, 90, 0.18)),
+        url('<?php echo htmlspecialchars($heroImage, ENT_QUOTES, 'UTF-8'); ?>') center center / cover no-repeat;
     }
 
-    .cta-tile h4 {
-      margin: 0 0 0.7rem;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--navy);
+    .services-box {
+      background: #fff;
+      border: 1px solid #e3edf7;
+      border-radius: 22px;
+      padding: 1.4rem;
+      box-shadow: 0 14px 30px rgba(34, 50, 71, 0.05);
+      height: 100%;
     }
 
-    .cta-tile p {
-      margin: 0 0 1rem;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .cta-tile a {
+    .services-box .number {
       color: var(--blue-dark);
       font-family: 'Montserrat', sans-serif;
-      font-size: 0.85rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .support-layout {
-      display: grid;
-      grid-template-columns: 0.95fr 1.05fr;
-      gap: 2rem;
-      align-items: stretch;
-    }
-
-    .support-panel {
-      background: linear-gradient(160deg, #0f2d57, #1c5ba2);
-      color: white;
-      border-radius: 32px;
-      padding: 2.2rem;
-      box-shadow: 0 24px 46px rgba(18, 60, 120, 0.18);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .support-panel::after {
-      content: "";
-      position: absolute;
-      width: 220px;
-      height: 220px;
-      right: -70px;
-      bottom: -70px;
-      border-radius: 50%;
-      background: rgba(143, 208, 255, 0.16);
-    }
-
-    .support-panel h3 {
-      position: relative;
-      margin: 0 0 0.9rem;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 2rem;
+      font-size: 1.25rem;
       font-weight: 800;
     }
 
-    .support-panel p {
-      position: relative;
-      margin: 0 0 1.4rem;
-      color: rgba(255, 255, 255, 0.9);
-      line-height: 1.7;
-      max-width: 420px;
-    }
-
-    .support-points {
-      position: relative;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 0.85rem;
-    }
-
-    .support-points li {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.8rem;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 16px;
-      padding: 0.9rem 1rem;
-    }
-
-    .support-points i {
-      color: #8fd0ff;
-      margin-top: 0.2rem;
-    }
-
-    .tool-showcase {
-      display: grid;
-      grid-template-columns: 1.15fr 0.85fr;
-      gap: 2rem;
-      align-items: start;
-    }
-
-    .tool-board {
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(234, 244, 255, 0.98));
-      border: 1px solid var(--line);
-      border-radius: 30px;
-      padding: 1.8rem;
-      box-shadow: 0 22px 38px rgba(34, 50, 71, 0.06);
-    }
-
-    .tool-board-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1.4rem;
-    }
-
-    .tool-board-header h3 {
-      margin: 0;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--navy);
-    }
-
-    .tool-badge {
+    .pill-link {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
-      padding: 0.45rem 0.8rem;
-      border-radius: 999px;
-      background: #dff0ff;
-      color: var(--blue-deep);
-      font-family: 'Montserrat', sans-serif;
-      font-size: 0.74rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .tool-rows {
-      display: grid;
-      gap: 1rem;
-    }
-
-    .tool-row {
-      display: grid;
-      grid-template-columns: 52px 1fr auto;
-      gap: 1rem;
-      align-items: center;
-      background: white;
-      border: 1px solid #e3edf7;
-      border-radius: 20px;
-      padding: 1rem 1.1rem;
-    }
-
-    .tool-row-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, #d9eeff, #8fd0ff);
-      color: var(--blue-deep);
-      font-size: 1.1rem;
-    }
-
-    .tool-row h4 {
-      margin: 0 0 0.2rem;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 1.02rem;
-      font-weight: 700;
-      color: var(--navy);
-    }
-
-    .tool-row p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.5;
-    }
-
-    .tool-status {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
+      gap: 0.5rem;
       color: var(--blue-dark);
-      background: #e8f4ff;
-      padding: 0.5rem 0.8rem;
-      border-radius: 999px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 0.83rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-top: 1rem;
     }
 
-    .tips-stack {
-      display: grid;
+    .feature-chip {
+      display: flex;
+      align-items: center;
       gap: 1rem;
+      background: #fff;
+      border: 1px solid #e3edf7;
+      border-radius: 999px;
+      padding: 0.9rem 1rem;
+      box-shadow: 0 12px 28px rgba(34, 50, 71, 0.05);
     }
 
-    .tip-note {
-      background: #123c78;
-      color: white;
-      border-radius: 24px;
-      padding: 1.5rem;
-      box-shadow: 0 20px 36px rgba(18, 60, 120, 0.18);
-    }
-
-    .tip-note.light {
-      background: white;
-      color: var(--text);
-      border: 1px solid var(--line);
-      box-shadow: 0 18px 34px rgba(34, 50, 71, 0.05);
-    }
-
-    .tip-note h4 {
-      margin: 0 0 0.7rem;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 1.12rem;
-      font-weight: 700;
-    }
-
-    .tip-note p {
-      margin: 0;
-      line-height: 1.6;
-      color: inherit;
-      opacity: 0.92;
-    }
-
-    .info-grid {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 0 1.5rem;
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 2rem;
-    }
-
-    .info-card {
-      text-align: center;
-      padding: 0.5rem 1rem;
-    }
-
-    .info-card h3 {
-      margin: 0 0 0.8rem;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 1.55rem;
-      font-weight: 700;
-      color: #1f2e41;
-    }
-
-    .info-card p {
-      margin: 0 auto 1.1rem;
-      max-width: 280px;
-      color: var(--text);
-      line-height: 1.5;
-      font-size: 1rem;
-    }
-
-    .meter {
-      width: 72px;
-      height: 72px;
-      margin: 0 auto;
+    .feature-chip i {
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
-      position: relative;
       display: grid;
       place-items: center;
+      background: #e9f4ff;
+      color: var(--blue-dark);
+    }
+
+    .workflow-item {
+      text-align: center;
+      padding: 1rem;
+    }
+
+    .workflow-item .icon-pill {
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .contact-panel {
+      background: linear-gradient(135deg, #12366a, #1b5aa6);
+      border-radius: 28px;
+      padding: 2.5rem;
+      color: white;
+      text-align: center;
+      box-shadow: 0 24px 46px rgba(18, 60, 120, 0.2);
+    }
+
+    .contact-panel p {
+      color: rgba(255,255,255,0.88);
+      max-width: 620px;
+      margin: 0.9rem auto 1.6rem;
+      line-height: 1.7;
+    }
+
+    .contact-panel .stack-card {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.24);
+      color: #ffffff;
+    }
+
+    .contact-panel .stack-card h4,
+    .contact-panel .stack-card p,
+    .contact-panel .stack-card .icon-pill {
+      color: #ffffff;
+    }
+
+    .contact-panel .stack-card .icon-pill {
+      background: rgba(255, 255, 255, 0.18);
+      box-shadow: none;
+    }
+
+    .action-row {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-soft-light {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.95rem 1.35rem;
+      border-radius: 10px;
       font-family: 'Montserrat', sans-serif;
-      font-size: 1rem;
+      font-size: 0.86rem;
       font-weight: 700;
-      color: #7f8a96;
-      background: #fff;
-    }
-
-    .meter::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      background: conic-gradient(var(--blue) 0 210deg, #e6eaee 210deg 360deg);
-      -webkit-mask: radial-gradient(circle at center, transparent 56%, #000 58%);
-      mask: radial-gradient(circle at center, transparent 56%, #000 58%);
-    }
-
-    .meter.orange::before {
-      background: conic-gradient(#6ab8ff 0 130deg, #2e84e6 130deg 250deg, #e6eaee 250deg 360deg);
-    }
-
-    .meter.score::before {
-      background: conic-gradient(#1f5da5 0 65deg, #3ea3ff 65deg 145deg, #8fd0ff 145deg 270deg, #e6eaee 270deg 360deg);
-    }
-
-    .meter span {
-      position: relative;
-      z-index: 1;
+      text-transform: uppercase;
+      color: white;
+      border: 1px solid rgba(255,255,255,0.24);
+      background: rgba(255,255,255,0.08);
     }
 
     @media (max-width: 991px) {
@@ -702,14 +468,8 @@ if ($heroImage === '') {
         min-height: 560px;
       }
 
-      .info-grid,
-      .steps-grid,
-      .support-grid,
-      .find-savings,
-      .support-layout,
-      .tool-showcase {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+      .feature-chip {
+        border-radius: 24px;
       }
     }
 
@@ -747,9 +507,6 @@ if ($heroImage === '') {
 
       <ul class="nav-links">
         <li><a href="#how-it-works">How It Works</a></li>
-        <li><a href="#find-savings">Passenger Booking</a></li>
-        <li><a href="#support">Driver &amp; Admin</a></li>
-        <li><a href="#tools-tips">System Features</a></li>
         <li><a href="#contact">Contact</a></li>
       </ul>
 
@@ -774,246 +531,56 @@ if ($heroImage === '') {
     </div>
   </section>
 
-  <section class="info-band">
-    <div class="info-grid">
-      <div class="info-card">
-        <h3>Find a Trip</h3>
-        <p>Choose your route, travel date, and available trip.</p>
-        <div class="meter"><span>7</span></div>
-      </div>
-
-      <div class="info-card">
-        <h3>Book and Pay</h3>
-        <p>Book your seat and complete payment in one process.</p>
-        <div class="meter orange"><span></span></div>
-      </div>
-
-      <div class="info-card">
-        <h3>Get Your Ticket</h3>
-        <p>View your ticket details after payment is completed.</p>
-        <div class="meter score"><span>748</span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section-block" id="how-it-works">
+  <section class="section-block light" id="how-it-works">
     <div class="section-shell">
-      <div class="section-title">
-        <span>How It Works</span>
-        <h2>How passengers use the system</h2>
-        <p>
-          The booking process is simple and direct from trip search to ticket.
-        </p>
-      </div>
-
-      <div class="steps-grid">
-        <div class="step-card">
-          <div class="step-number">1</div>
-          <h3>Search trips</h3>
-          <p>Choose departure, destination, and travel date to see available trips.</p>
+      <div class="row align-items-center justify-content-between g-4 g-lg-5">
+        <div class="col-lg-6">
+          <div class="about-image"></div>
         </div>
-
-        <div class="step-card">
-          <div class="step-number">2</div>
-          <h3>Pay and confirm</h3>
-          <p>Choose a payment method, confirm the booking, and complete payment.</p>
-        </div>
-
-        <div class="step-card">
-          <div class="step-number">3</div>
-          <h3>Receive your ticket</h3>
-          <p>After payment, the system shows your ticket details for travel.</p>
+        <div class="col-lg-5">
+          <div class="section-copy">
+            <span class="title-sm">How It Works</span>
+            <div class="section-divider"></div>
+            <h2>Simple booking from search to ticket</h2>
+            <p>
+              SwiftPass keeps the passenger journey clear. Search available trips, choose seats, make payment, and keep ticket details in one connected flow.
+            </p>
+            <a href="register.php" class="pill-link">Create account <i class="fas fa-arrow-right"></i></a>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="section-block alt" id="find-savings">
+  <section class="section-block light" id="contact">
     <div class="section-shell">
-      <div class="section-title">
-        <span>Passenger Booking</span>
-        <h2>Passenger booking made clear</h2>
-        <p>
-          Passengers can move from trip search to payment and ticket without confusion.
-        </p>
-      </div>
-
-      <div class="find-savings">
-        <div class="find-panel">
-          <h3>Everything needed for booking is connected</h3>
+      <div class="contact-panel text-center">
+        <span class="title-sm">Contact</span>
+        <div class="section-divider mx-auto"></div>
+        <div class="section-copy">
+          <h2>Need help with SwiftPass?</h2>
           <p>
-            Trip search, seat booking, payment, and ticket details work together in one flow.
+            Contact the team for support with booking, payment, tickets, driver access, or admin assistance.
           </p>
-          <ul class="find-list">
-            <li>Search trips by route and date.</li>
-            <li>Book seats and continue to payment.</li>
-            <li>Keep ticket details after payment.</li>
-          </ul>
         </div>
-
-        <div class="find-cta">
-          <div class="cta-tile">
-            <h4>Create Account</h4>
-            <p>Register as a passenger to start using the system.</p>
-            <a href="register.php">Create Account</a>
-          </div>
-
-          <div class="cta-tile">
-            <h4>Search and Book</h4>
-            <p>Find trips, choose seats, and continue to payment.</p>
-            <a href="login.php">Passenger Login</a>
-          </div>
-
-          <div class="cta-tile">
-            <h4>View Ticket</h4>
-            <p>After payment, ticket details remain available for confirmation.</p>
-            <a href="login.php">View System</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section-block" id="support">
-    <div class="section-shell">
-      <div class="section-title">
-        <span>Driver &amp; Admin</span>
-        <h2>Driver and admin access</h2>
-        <p>
-          Drivers and administrators each have their own pages and tools inside the system.
-        </p>
-      </div>
-
-      <div class="support-layout">
-        <div class="support-panel">
-          <h3>Each role has its own workspace</h3>
-          <p>
-            Drivers and admins use different dashboards, but all records stay connected.
-          </p>
-          <ul class="support-points">
-            <li>
-              <i class="fas fa-check-circle"></i>
-              <span>Drivers can log in and view their dashboard.</span>
-            </li>
-            <li>
-              <i class="fas fa-check-circle"></i>
-              <span>Admins can manage routes, users, bookings, and payments.</span>
-            </li>
-            <li>
-              <i class="fas fa-check-circle"></i>
-              <span>Each role sees the tools that match its work.</span>
-            </li>
-          </ul>
-        </div>
-
-        <div class="support-grid">
-          <div class="support-card">
-            <div class="card-icon"><i class="fas fa-users"></i></div>
-            <h3>Driver Dashboard</h3>
-            <p>Drivers use a dedicated login and dashboard.</p>
-          </div>
-
-          <div class="support-card">
-            <div class="card-icon"><i class="fas fa-id-card"></i></div>
-            <h3>Admin Dashboard</h3>
-            <p>Admins manage routes, drivers, users, bookings, and payments.</p>
-          </div>
-
-          <div class="support-card">
-            <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
-            <h3>System Settings</h3>
-            <p>Settings help manage account details and system information.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section-block" id="contact">
-    <div class="section-shell">
-      <div class="section-title">
-        <span>Contact</span>
-        <h2>Get in touch with SwiftPass</h2>
-        <p>
-          If you need help with booking, payment, tickets, driver access, or admin support, use the contact details below.
-        </p>
-      </div>
-
-      <div class="row g-4 justify-content-center">
-        <div class="col-md-10 col-lg-8">
-          <div class="cta-tile text-center">
-            <h4>Contact Information</h4>
-            <p class="mb-2"><strong>Email:</strong>SwiftPass@gmail.com</p>
-            <p class="mb-2"><strong>Phone:</strong> +250 7857432</p>
-            <p class="mb-0"><strong>Location:</strong> Nyabugogo, Kigali, Rwanda</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="section-block alt" id="tools-tips">
-    <div class="section-shell">
-      <div class="section-title">
-        <span>System Features</span>
-        <h2>Main parts of the system</h2>
-        <p>
-          These are the key areas already available in SwiftPass.
-        </p>
-      </div>
-
-      <div class="tool-showcase">
-        <div class="tool-board">
-          <div class="tool-board-header">
-            <h3>System overview</h3>
-            <div class="tool-badge"><i class="fas fa-bolt"></i>Daily flow</div>
-          </div>
-
-          <div class="tool-rows">
-            <div class="tool-row">
-              <div class="tool-row-icon"><i class="fas fa-map-signs"></i></div>
-              <div>
-                <h4>Routes and Trips</h4>
-                <p>Manage routes, destinations, and trip schedules.</p>
-              </div>
-              <div class="tool-status">Essential</div>
+        <div class="row justify-content-center g-3 mt-2">
+          <div class="col-md-5">
+            <div class="stack-card text-start">
+              <div class="icon-pill"><i class="fas fa-envelope"></i></div>
+              <h4>Email Support</h4>
+              <p>support@swiftpass</p>
             </div>
-
-            <div class="tool-row">
-              <div class="tool-row-icon"><i class="fas fa-money-check-alt"></i></div>
-              <div>
-                <h4>Bookings and Payments</h4>
-                <p>Review booking details, payments, and ticket records.</p>
-              </div>
-              <div class="tool-status">Active</div>
-            </div>
-
-            <div class="tool-row">
-              <div class="tool-row-icon"><i class="fas fa-cogs"></i></div>
-              <div>
-                <h4>Drivers and Users</h4>
-                <p>Keep driver and user records in one connected platform.</p>
-              </div>
-              <div class="tool-status">Stable</div>
+          </div>
+          <div class="col-md-5">
+            <div class="stack-card text-start">
+              <div class="icon-pill"><i class="fas fa-phone-alt"></i></div>
+              <h4>Call Support</h4>
+              <p>0780506643</p>
             </div>
           </div>
         </div>
-
-        <div class="tips-stack">
-          <div class="tip-note">
-            <h4>Easy to use</h4>
-            <p>Passengers should quickly understand how to search, pay, and get a ticket.</p>
-          </div>
-
-          <div class="tip-note light">
-            <h4>Connected data</h4>
-            <p>Bookings, payments, tickets, and trip details should stay linked together.</p>
-          </div>
-
-          <div class="tip-note light">
-            <h4>Clear management</h4>
-            <p>Important admin actions should stay visible and easy to review.</p>
-          </div>
+        <div class="action-row d-flex flex-wrap justify-content-center gap-3 mt-4">
+          <a href="mailto:support@swiftpass" class="signup-btn">Email Support</a>
         </div>
       </div>
     </div>
