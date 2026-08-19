@@ -482,7 +482,46 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
   round(($performance_stats['completed_trips'] / $performance_stats['total_trips']) * 100, 1) : 0;
 
 
+// ... inside your existing PHP block (before <!DOCTYPE html>) ...
 
+// ===== NOTIFICATIONS SYSTEM =====
+$unread_notifications_count = 0;
+$recent_notifications = [];
+
+// 1. Get the count of unread notifications
+$count_sql = "SELECT COUNT(*) as count FROM admin_notifications WHERE status = 'unread'";
+$count_res = $conn->query($count_sql);
+if ($count_res) {
+  $unread_notifications_count = $count_res->fetch_assoc()['count'];
+}
+
+// 2. Fetch the 5 most recent notifications
+$notif_sql = "SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 5";
+$notif_res = $conn->query($notif_sql);
+if ($notif_res) {
+  while ($row = $notif_res->fetch_assoc()) {
+    $recent_notifications[] = $row;
+  }
+}
+
+// 3. Handle "Mark Single as Read"
+if (isset($_GET['mark_notification_read'])) {
+  $notif_id = (int) $_GET['mark_notification_read'];
+  $update_sql = "UPDATE admin_notifications SET status = 'read' WHERE notification_id = $notif_id";
+  $conn->query($update_sql);
+  // Redirect to clean the URL
+  header("Location: " . strtok($_SERVER["REQUEST_URI"], '?'));
+  exit;
+}
+
+// 4. Handle "Mark All as Read"
+if (isset($_GET['mark_all_read'])) {
+  $update_sql = "UPDATE admin_notifications SET status = 'read' WHERE status = 'unread'";
+  $conn->query($update_sql);
+  header("Location: " . strtok($_SERVER["REQUEST_URI"], '?'));
+  exit;
+}
+// ===== END NOTIFICATIONS SYSTEM =====
 ?>
 
 <!DOCTYPE html>
@@ -495,7 +534,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* YOUR EXACT CSS STYLES - NO CHANGES */
+    /* YOUR EXACT CSS STYLES - UPDATED WITH FIXES */
     :root {
       --primary: #2c3e50;
       --secondary: #3498db;
@@ -595,7 +634,7 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       min-height: 100vh;
     }
 
-    /* Header */
+    /* Header - UPDATED WITH CLIPPING FIX */
     .header {
       background: rgba(255, 255, 255, 0.95);
       border-radius: 15px;
@@ -606,6 +645,13 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       justify-content: space-between;
       align-items: center;
       backdrop-filter: blur(10px);
+
+      /* FIX FOR CHROME CLIPPING */
+      overflow: visible !important;
+      -webkit-mask-image: none !important;
+      mask-image: none !important;
+      z-index: 10;
+      isolation: isolate;
     }
 
     .header h2 {
@@ -1126,281 +1172,406 @@ $completion_rate = $performance_stats['total_trips'] > 0 ?
       border-radius: 3px;
     }
 
-body {
-  font-size: 14px;
-}
+    body {
+      font-size: 14px;
+    }
 
-/* Sidebar */
-.sidebar-brand {
-  padding: 1.25rem 1.25rem;
-}
+    /* Sidebar */
+    .sidebar-brand {
+      padding: 1.25rem 1.25rem;
+    }
 
-.sidebar-brand h4 {
-  font-size: 1.1rem;
-}
+    .sidebar-brand h4 {
+      font-size: 1.1rem;
+    }
 
-.sidebar-brand i {
-  font-size: 1.4rem;
-}
+    .sidebar-brand i {
+      font-size: 1.4rem;
+    }
 
-.sidebar .nav-link {
-  padding: 0.75rem 1.25rem;
-  margin: 0.2rem 0.75rem;
-  font-size: 0.9rem;
-}
+    .sidebar .nav-link {
+      padding: 0.75rem 1.25rem;
+      margin: 0.2rem 0.75rem;
+      font-size: 0.9rem;
+    }
 
-.sidebar .nav-link i {
-  font-size: 0.9rem;
-}
+    .sidebar .nav-link i {
+      font-size: 0.9rem;
+    }
 
-/* Main content */
-.main-content {
-  padding: 1.25rem;
-}
+    /* Main content */
+    .main-content {
+      padding: 1.25rem;
+    }
 
-/* Header */
-.header {
-  padding: 1.1rem 1.5rem;
-  margin-bottom: 1.25rem;
-}
+    /* Header */
+    .header {
+      padding: 1.1rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
 
-.header h2 {
-  font-size: 1.4rem;
-}
+    .header h2 {
+      font-size: 1.4rem;
+    }
 
-.header p {
-  font-size: 0.85rem;
-  margin-top: 0.3rem;
-}
+    .header p {
+      font-size: 0.85rem;
+      margin-top: 0.3rem;
+    }
 
-.user-avatar {
-  width: 42px;
-  height: 42px;
-  font-size: 1rem;
-  border-width: 2px;
-}
+    .user-avatar {
+      width: 42px;
+      height: 42px;
+      font-size: 1rem;
+      border-width: 2px;
+    }
 
-/* Statistic cards */
-.stat-card {
-  padding: 1.25rem;
-}
+    /* Statistic cards */
+    .stat-card {
+      padding: 1.25rem;
+    }
 
-.stat-card h5 {
-  font-size: 0.75rem;
-  margin-bottom: 0.65rem;
-}
+    .stat-card h5 {
+      font-size: 0.75rem;
+      margin-bottom: 0.65rem;
+    }
 
-.stat-card .number {
-  font-size: 2rem;
-}
+    .stat-card .number {
+      font-size: 2rem;
+    }
 
-.stat-card .trend {
-  font-size: 0.75rem;
-}
+    .stat-card .trend {
+      font-size: 0.75rem;
+    }
 
-/* Tables */
-.table-container {
-  padding: 1.25rem;
-  margin-top: 1.25rem;
-}
+    /* Tables */
+    .table-container {
+      padding: 1.25rem;
+      margin-top: 1.25rem;
+    }
 
-.table-container h4 {
-  font-size: 1.15rem;
-  margin-bottom: 1rem;
-}
+    .table-container h4 {
+      font-size: 1.15rem;
+      margin-bottom: 1rem;
+    }
 
-.table-container h5 {
-  font-size: 1rem;
-  margin-bottom: 1rem;
-}
+    .table-container h5 {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
 
-.table thead th {
-  padding: 0.8rem 0.75rem;
-  font-size: 0.75rem;
-}
+    .table thead th {
+      padding: 0.8rem 0.75rem;
+      font-size: 0.75rem;
+    }
 
-.table tbody td {
-  padding: 0.8rem 0.75rem;
-  font-size: 0.85rem;
-}
+    .table tbody td {
+      padding: 0.8rem 0.75rem;
+      font-size: 0.85rem;
+    }
 
-/* Badges */
-.badge {
-  padding: 0.4rem 0.7rem;
-  font-size: 0.7rem;
-}
+    /* Badges */
+    .badge {
+      padding: 0.4rem 0.7rem;
+      font-size: 0.7rem;
+    }
 
-.status-badge {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.7rem;
-}
+    .status-badge {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.7rem;
+    }
 
-/* Buttons */
-.btn-primary,
-.btn-success {
-  padding: 0.55rem 1.25rem;
-  font-size: 0.85rem;
-}
+    /* Buttons */
+    .btn-primary,
+    .btn-success {
+      padding: 0.55rem 1.25rem;
+      font-size: 0.85rem;
+    }
 
-.btn {
-  font-size: 0.85rem;
-}
+    .btn {
+      font-size: 0.85rem;
+    }
 
-/* Bus/stat cards */
-.stats-card {
-  padding: 1.1rem;
-  margin-bottom: 1rem;
-}
+    /* Bus/stat cards */
+    .stats-card {
+      padding: 1.1rem;
+      margin-bottom: 1rem;
+    }
 
-.stat-number {
-  font-size: 1.6rem;
-}
+    .stat-number {
+      font-size: 1.6rem;
+    }
 
-/* Filter section */
-.filter-section {
-  padding: 1.1rem;
-  margin-bottom: 1rem;
-}
+    /* Filter section */
+    .filter-section {
+      padding: 1.1rem;
+      margin-bottom: 1rem;
+    }
 
-.search-box input {
-  font-size: 0.85rem;
-  padding-top: 0.55rem;
-  padding-bottom: 0.55rem;
-}
+    .search-box input {
+      font-size: 0.85rem;
+      padding-top: 0.55rem;
+      padding-bottom: 0.55rem;
+    }
 
-.filter-buttons .btn {
-  padding: 0.4rem 1rem;
-  font-size: 0.8rem;
-}
+    .filter-buttons .btn {
+      padding: 0.4rem 1rem;
+      font-size: 0.8rem;
+    }
 
-/* Auto update indicator */
-.auto-update-indicator {
-  padding: 0.4rem 0.75rem;
-  font-size: 0.7rem;
-  margin-bottom: 0.75rem;
-}
+    /* Auto update indicator */
+    .auto-update-indicator {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.7rem;
+      margin-bottom: 0.75rem;
+    }
 
-/* Settings */
-.settings-card {
-  padding: 1.1rem;
-  margin-bottom: 1rem;
-}
+    /* Settings */
+    .settings-card {
+      padding: 1.1rem;
+      margin-bottom: 1rem;
+    }
 
-.settings-card .card-header {
-  padding-bottom: 0.75rem;
-  margin-bottom: 1rem;
-}
+    .settings-card .card-header {
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
 
-.settings-card .card-header h5 {
-  font-size: 1rem;
-}
+    .settings-card .card-header h5 {
+      font-size: 1rem;
+    }
 
-.settings-card .form-label {
-  font-size: 0.85rem;
-}
+    .settings-card .form-label {
+      font-size: 0.85rem;
+    }
 
-.settings-card .form-control,
-.settings-card .form-select {
-  font-size: 0.85rem;
-  padding: 0.5rem 0.75rem;
-}
+    .settings-card .form-control,
+    .settings-card .form-select {
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+    }
 
-/* No data */
-.no-data {
-  padding: 2rem;
-  font-size: 0.85rem;
-}
+    /* No data */
+    .no-data {
+      padding: 2rem;
+      font-size: 0.85rem;
+    }
 
-.no-data i {
-  font-size: 2.25rem;
-}
+    .no-data i {
+      font-size: 2.25rem;
+    }
 
-/* Action buttons */
-.action-buttons {
-  gap: 0.35rem;
-}
+    /* Action buttons */
+    .action-buttons {
+      gap: 0.35rem;
+    }
 
-/* Bus cards */
-.bus-card {
-  font-size: 0.85rem;
-}
+    /* Bus cards */
+    .bus-card {
+      font-size: 0.85rem;
+    }
 
-/* Seats indicator */
-.seats-indicator {
-  height: 6px;
-}
+    /* Seats indicator */
+    .seats-indicator {
+      height: 6px;
+    }
 
-/* Headings inside dashboard sections */
-.dashboard-section h1 {
-  font-size: 1.6rem;
-}
+    /* Headings inside dashboard sections */
+    .dashboard-section h1 {
+      font-size: 1.6rem;
+    }
 
-.dashboard-section h2 {
-  font-size: 1.4rem;
-}
+    .dashboard-section h2 {
+      font-size: 1.4rem;
+    }
 
-.dashboard-section h3 {
-  font-size: 1.2rem;
-}
+    .dashboard-section h3 {
+      font-size: 1.2rem;
+    }
 
-.dashboard-section h4 {
-  font-size: 1.05rem;
-}
+    .dashboard-section h4 {
+      font-size: 1.05rem;
+    }
 
-.dashboard-section h5 {
-  font-size: 0.95rem;
-}
+    .dashboard-section h5 {
+      font-size: 0.95rem;
+    }
 
-.dashboard-section h6 {
-  font-size: 0.85rem;
-}
+    .dashboard-section h6 {
+      font-size: 0.85rem;
+    }
 
-/* Form elements globally */
-.form-control,
-.form-select {
-  font-size: 0.85rem;
-}
+    /* Form elements globally */
+    .form-control,
+    .form-select {
+      font-size: 0.85rem;
+    }
 
-.form-label {
-  font-size: 0.85rem;
-}
+    .form-label {
+      font-size: 0.85rem;
+    }
 
-/* Keep mobile compact as well */
-@media (max-width: 768px) {
-  body {
-    font-size: 13px;
-  }
+    /* Keep mobile compact as well */
+    @media (max-width: 768px) {
+      body {
+        font-size: 13px;
+      }
 
-  .main-content {
-    padding: 0.75rem;
-  }
+      .main-content {
+        padding: 0.75rem;
+      }
 
-  .header {
-    padding: 0.85rem;
-  }
+      .header {
+        padding: 0.85rem;
+      }
 
-  .header h2 {
-    font-size: 1.2rem;
-  }
+      .header h2 {
+        font-size: 1.2rem;
+      }
 
-  .stat-card {
-    padding: 1rem;
-  }
+      .stat-card {
+        padding: 1rem;
+      }
 
-  .stat-card .number {
-    font-size: 1.7rem;
-  }
+      .stat-card .number {
+        font-size: 1.7rem;
+      }
 
-  .table-container {
-    padding: 1rem;
-  }
+      .table-container {
+        padding: 1rem;
+      }
 
-  .table thead th,
-  .table tbody td {
-    padding: 0.65rem 0.5rem;
-    font-size: 0.75rem;
-  }
-}
+      .table thead th,
+      .table tbody td {
+        padding: 0.65rem 0.5rem;
+        font-size: 0.75rem;
+      }
+    }
+
+    /* ========================================= */
+    /* NEW NOTIFICATION BELL STYLES (FIXED CSS)  */
+    /* ========================================= */
+    .notification-dropdown-wrapper {
+      position: relative;
+      display: inline-block;
+      z-index: 1050;
+    }
+
+    .notification-btn {
+      position: relative;
+      border: none;
+      background: transparent;
+      padding: 0.5rem;
+    }
+
+    .notification-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      width: 400px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      margin-top: 10px;
+      z-index: 9999;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .notification-dropdown.show {
+      display: block;
+    }
+
+    .notification-dropdown .list-group-item {
+      border-left: none;
+      border-right: none;
+      border-radius: 0;
+    }
+
+    .notification-dropdown .list-group-item:hover {
+      background-color: #f1f3f5 !important;
+    }
+
+    .notification-btn .badge {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.45rem;
+      min-width: 18px;
+      transform: translate(-30%, -30%) !important;
+    }
+
+    @media (max-width: 768px) {
+      .notification-dropdown {
+        width: 300px;
+        right: -50px;
+      }
+    }
+
+    /* ========================================= */
+    /* NOTIFICATION BELL STYLES (PLACED OUTSIDE)  */
+    /* ========================================= */
+    .notification-container {
+      position: relative;
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 1.5rem;
+      z-index: 1050;
+    }
+
+    .notification-dropdown-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .notification-btn {
+      position: relative;
+      border: none;
+      background: transparent;
+      padding: 0.5rem;
+    }
+
+    .notification-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      width: 400px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      margin-top: 10px;
+      z-index: 9999;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .notification-dropdown.show {
+      display: block;
+    }
+
+    .notification-dropdown .list-group-item {
+      border-left: none;
+      border-right: none;
+      border-radius: 0;
+    }
+
+    .notification-dropdown .list-group-item:hover {
+      background-color: #f1f3f5 !important;
+    }
+
+    .notification-btn .badge {
+      font-size: 0.65rem;
+      padding: 0.25rem 0.45rem;
+      min-width: 18px;
+      transform: translate(-30%, -30%) !important;
+    }
+
+    @media (max-width: 768px) {
+      .notification-dropdown {
+        width: 300px;
+        right: -50px;
+      }
+    }
+
+    /* ========================================= */
   </style>
 </head>
 
@@ -1472,7 +1643,7 @@ body {
             <span>Reports</span>
           </a>
         </li>
-       
+
       </ul>
     </div>
   </div>
@@ -1489,12 +1660,79 @@ body {
         <a href="scan_ticket.php" class="btn btn-success me-2">
           <i class="fas fa-qrcode me-1"></i> Scan Tickets
         </a>
+
+        <!-- REMOVED NOTIFICATIONS FROM HERE -->
+
         <div class="text-end">...</div>
         <div class="user-avatar">AS</div>
         <a href="logout.php" class="btn btn-outline-danger btn-sm">Logout</a>
       </div>
     </div>
+    <!-- ========================================= -->
+    <!-- NOTIFICATION BELL (Placed outside header)  -->
+    <!-- ========================================= -->
+    <div class="notification-container" style="margin-bottom: 1rem;">
+      <div class="notification-dropdown-wrapper">
+        <button class="notification-btn" id="notificationBtn">
+          <i class="fas fa-bell" style="font-size: 1.4rem; color: #ffffff;"></i>
+          <?php if ($unread_notifications_count > 0): ?>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              <?php echo $unread_notifications_count; ?>
+              <span class="visually-hidden">unread messages</span>
+            </span>
+          <?php endif; ?>
+        </button>
+        <!-- Notification Dropdown -->
+        <div class="notification-dropdown" id="notificationDropdown">
+          <div class="dropdown-header bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 text-dark fw-bold">Notifications</h6>
+            <?php if ($unread_notifications_count > 0): ?>
+              <a href="?mark_all_read=1" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;">Mark all
+                read</a>
+            <?php endif; ?>
+          </div>
 
+          <div class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+            <?php if (empty($recent_notifications)): ?>
+              <div class="p-3 text-center text-muted">
+                <i class="fas fa-check-circle"></i> All caught up!
+              </div>
+            <?php else: ?>
+              <?php foreach ($recent_notifications as $n): ?>
+                <a href="?mark_notification_read=<?php echo $n['notification_id']; ?>"
+                  class="list-group-item list-group-item-action p-3 <?php echo $n['status'] == 'unread' ? 'bg-light border-start border-4 border-primary' : ''; ?>">
+                  <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div>
+                      <h6 class="mb-1 text-dark fw-bold" style="font-size: 0.9rem;">
+                        <?php echo htmlspecialchars($n['title']); ?></h6>
+                      <p class="mb-1 small text-muted" style="font-size: 0.8rem;">
+                        <?php echo htmlspecialchars($n['message']); ?></p>
+                      <small class="text-muted"
+                        style="font-size: 0.7rem;"><?php echo date('M j, H:i', strtotime($n['created_at'])); ?></small>
+                    </div>
+                    <?php if ($n['status'] == 'unread'): ?>
+                      <span class="badge bg-primary rounded-pill"
+                        style="height: 8px; width: 8px; padding: 0; margin-top: 5px;"></span>
+                    <?php endif; ?>
+                  </div>
+                </a>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </div>
+
+          <!-- ===== ADD THIS FOOTER ===== -->
+          <div class="dropdown-footer p-3 border-top text-center bg-light">
+            <a href="view_notifications.php" class="btn btn-outline-primary btn-sm w-100">
+              <i class="fas fa-list me-2"></i> View All Notifications
+            </a>
+          </div>
+          <!-- ===== END FOOTER ===== -->
+        </div>
+      </div>
+    </div>
+    <!-- ========================================= -->
+    <!-- END NOTIFICATION BELL                     -->
+    <!-- ========================================= -->
     <!-- Dashboard Section -->
     <div id="dashboard" class="dashboard-section">
       <!-- Statistics Cards -->
@@ -2401,40 +2639,37 @@ body {
                     <td>
                       <div class="action-buttons">
 
-    <!-- Edit -->
-    <a href="update_users.php?id=<?= (int)$user['id']; ?>"
-       class="btn btn-sm btn-outline-primary"
-       title="Edit User">
-        <i class="fas fa-edit"></i>
-    </a>
-<!-- Activate / Deactivate -->
-<?php if ((int)$user['id'] !== (int)$userId): ?>
+                        <!-- Edit -->
+                        <a href="update_users.php?id=<?= (int) $user['id']; ?>" class="btn btn-sm btn-outline-primary"
+                          title="Edit User">
+                          <i class="fas fa-edit"></i>
+                        </a>
+                        <!-- Activate / Deactivate -->
+                        <?php if ((int) $user['id'] !== (int) $userId): ?>
 
-    <?php if ($user['status'] === 'active'): ?>
+                          <?php if ($user['status'] === 'active'): ?>
 
-        <!-- Currently Active - Click to Deactivate -->
-        <a href="toggle_user_status.php?id=<?= (int)$user['id']; ?>&status=inactive"
-           class="btn btn-sm btn-outline-success"
-           title="Active - Click to Deactivate"
-           onclick="return confirm('Are you sure you want to deactivate this user?');">
-            <i class="fas fa-user-check"></i>
-        </a>
+                            <!-- Currently Active - Click to Deactivate -->
+                            <a href="toggle_user_status.php?id=<?= (int) $user['id']; ?>&status=inactive"
+                              class="btn btn-sm btn-outline-success" title="Active - Click to Deactivate"
+                              onclick="return confirm('Are you sure you want to deactivate this user?');">
+                              <i class="fas fa-user-check"></i>
+                            </a>
 
-    <?php else: ?>
+                          <?php else: ?>
 
-        <!-- Currently Inactive - Click to Activate -->
-        <a href="toggle_user_status.php?id=<?= (int)$user['id']; ?>&status=active"
-           class="btn btn-sm btn-outline-warning"
-           title="Inactive - Click to Activate"
-           onclick="return confirm('Are you sure you want to activate this user?');">
-            <i class="fas fa-user-slash"></i>
-        </a>
+                            <!-- Currently Inactive - Click to Activate -->
+                            <a href="toggle_user_status.php?id=<?= (int) $user['id']; ?>&status=active"
+                              class="btn btn-sm btn-outline-warning" title="Inactive - Click to Activate"
+                              onclick="return confirm('Are you sure you want to activate this user?');">
+                              <i class="fas fa-user-slash"></i>
+                            </a>
 
-    <?php endif; ?>
+                          <?php endif; ?>
 
-<?php endif; ?>
+                        <?php endif; ?>
 
-</div>
+                      </div>
                     </td>
                   </tr>
                 <?php endforeach; ?>
@@ -2648,7 +2883,8 @@ body {
           <div class="col-md-3">
             <div class="stats-card text-center">
               <div class="stat-number text-info">
-                <?php echo number_format($summary['avg_passengers_per_trip'] ?? 0, 1); ?></div>
+                <?php echo number_format($summary['avg_passengers_per_trip'] ?? 0, 1); ?>
+              </div>
               <p class="mb-0 text-muted">Avg Passengers/Trip</p>
             </div>
           </div>
@@ -2770,7 +3006,8 @@ body {
                         </td>
                         <td><?php echo $route_revenue['trips_count'] ?? 0; ?></td>
                         <td class="fw-bold text-success">
-                          <?php echo number_format($route_revenue['route_revenue'] ?? 0); ?> FRW</td>
+                          <?php echo number_format($route_revenue['route_revenue'] ?? 0); ?> FRW
+                        </td>
                       </tr>
                     <?php endwhile; ?>
                   </tbody>
@@ -3160,6 +3397,24 @@ body {
         document.getElementById('reportFilterForm').submit();
       });
     });
+
+    // Notification Bell Toggle
+    const notifBtn = document.getElementById('notificationBtn');
+    const notifDropdown = document.getElementById('notificationDropdown');
+
+    if (notifBtn && notifDropdown) {
+      notifBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        notifDropdown.classList.toggle('show');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function (e) {
+        if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
+          notifDropdown.classList.remove('show');
+        }
+      });
+    }
   </script>
 </body>
 
