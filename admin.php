@@ -495,8 +495,8 @@ if ($count_res) {
   $unread_notifications_count = $count_res->fetch_assoc()['count'];
 }
 
-// 2. Fetch the 5 most recent notifications
-$notif_sql = "SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT 5";
+// 2. Fetch the 5 most recent UNREAD notifications
+$notif_sql = "SELECT * FROM admin_notifications WHERE status = 'unread' ORDER BY created_at DESC LIMIT 5";
 $notif_res = $conn->query($notif_sql);
 if ($notif_res) {
   while ($row = $notif_res->fetch_assoc()) {
